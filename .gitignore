@@ -36,5 +36,9 @@ docker-compose.override.yml
 
 # Test output
 target/cucumber-reports/
+
+# Arquivos internos da equipe (nao commitar)
+apresentacao.md
+prompt-figma.md
 .claude
 CLAUDE.md

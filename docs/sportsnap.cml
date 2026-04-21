@@ -1,0 +1,220 @@
+/* SportSnap — Context Mapper Language (CML) Model */
+
+ContextMap SportSnapMap {
+    type = SYSTEM_LANDSCAPE
+    state = TO_BE
+
+    contains GamificacaoContext
+    contains MarketplaceContext
+    contains SessaoContext
+
+    /* Marketplace fornece LicencaDeImagem que o Gamificacao consome para Sincronizacao */
+    GamificacaoContext [D,C] <- [U,S] MarketplaceContext {
+        implementationTechnology = "REST"
+        exposedAggregates = LicencaAggregate
+    }
+
+    /* Sessao fornece CheckIn/Session que o Marketplace consome para Match de Fotos */
+    MarketplaceContext [D,C] <- [U,S] SessaoContext {
+        implementationTechnology = "REST"
+        exposedAggregates = SessaoAggregate
+    }
+
+    /* Sessao fornece RegistroDeAtividade que o Gamificacao consome para calcular XP */
+    GamificacaoContext [D,C] <- [U,S] SessaoContext {
+        implementationTechnology = "REST"
+        exposedAggregates = SessaoAggregate
+    }
+}
+
+/* ===================== SUBDOMINIOS ===================== */
+
+Domain SportSnap {
+
+    Subdomain GamificacaoDomain {
+        type = CORE_DOMAIN
+        domainVisionStatement = "Diferencial competitivo: mecanica de Shadow Stats/Reveal que conecta performance real a fotografia profissional."
+    }
+
+    Subdomain MarketplaceDomain {
+        type = SUPPORTING_DOMAIN
+        domainVisionStatement = "Suporta o core business com compra/venda de fotos, licencas e split financeiro."
+    }
+
+    Subdomain SessaoDomain {
+        type = GENERIC_SUBDOMAIN
+        domainVisionStatement = "Geolocalizacao, sessoes esportivas e check-ins. Funcionalidade generica que poderia ser terceirizada."
+    }
+}
+
+/* ===================== BOUNDED CONTEXTS ===================== */
+
+BoundedContext GamificacaoContext implements GamificacaoDomain {
+    type = FEATURE
+    implementationTechnology = "Java 21 / Spring Boot 3"
+    responsibilities = "Shadow Stats", "Reveal/Sincronizacao", "Ranking", "Calculo de Overall"
+
+    Aggregate AtletaAggregate {
+        Entity Atleta {
+            aggregateRoot
+
+            Long id
+            String nome
+            String email
+            LocalDateTime criadoEm
+
+            - CartaOficial cartaOficial
+            - StatusPotencial statusPotencial
+        }
+
+        Entity CartaOficial {
+            Long id
+            Double overall
+            String imagemUrl
+            LocalDateTime ultimaSincronizacao
+
+            - List<AtributoEsportivo> atributos
+        }
+
+        Entity AtributoEsportivo {
+            Long id
+            String nome
+            Double valor
+            Double peso
+        }
+
+        Entity StatusPotencial {
+            Long id
+            Double xpAcumulado
+            Integer streakDeConsistencia
+            LocalDateTime ultimaAtividade
+        }
+
+        Service SincronizarCartaAtleta {
+            void executar(Long atletaId);
+        }
+
+        Service CalcularOverall {
+            Double executar(Long atletaId);
+        }
+    }
+}
+
+BoundedContext MarketplaceContext implements MarketplaceDomain {
+    type = FEATURE
+    implementationTechnology = "Java 21 / Spring Boot 3"
+    responsibilities = "Fotos", "Licencas de Imagem", "Split Financeiro", "Upload em Lote"
+
+    Aggregate FotografoAggregate {
+        Entity Fotografo {
+            aggregateRoot
+
+            Long id
+            String nome
+            String email
+            LocalDateTime criadoEm
+
+            - List<Lote> lotes
+        }
+
+        Entity Lote {
+            Long id
+            Long sessionId
+            Long spotId
+            LocalDateTime criadoEm
+
+            - List<Foto> fotos
+        }
+    }
+
+    Aggregate LicencaAggregate {
+        Entity Foto {
+            aggregateRoot
+
+            Long id
+            String urlPreview
+            String urlOriginal
+            LocalDateTime timestampExif
+            String metadadosExif
+            Long version
+
+            - List<LicencaDeImagem> licencas
+        }
+
+        Entity LicencaDeImagem {
+            Long id
+            Long atletaId
+            BigDecimal preco
+            LocalDateTime adquiridaEm
+
+            - SplitFinanceiro splitFinanceiro
+        }
+
+        Entity SplitFinanceiro {
+            Long id
+            BigDecimal valorFotografo
+            BigDecimal taxaPlataforma
+            LocalDateTime processadoEm
+        }
+
+        Service ProcessarVendaFoto {
+            void executar(Long atletaId, Long fotoId);
+        }
+
+        Service UploadIndexacaoEmLote {
+            void executar(Long loteId, List<String> caminhosFotos);
+        }
+    }
+}
+
+BoundedContext SessaoContext implements SessaoDomain {
+    type = FEATURE
+    implementationTechnology = "Java 21 / Spring Boot 3"
+    responsibilities = "Spots", "Sessoes", "Check-ins", "Registros de Atividade", "Motor de Match"
+
+    Aggregate SessaoAggregate {
+        Entity Spot {
+            aggregateRoot
+
+            Long id
+            String nome
+            Double latitude
+            Double longitude
+            String descricao
+        }
+
+        Entity Session {
+            Long id
+            LocalDateTime inicio
+            LocalDateTime fim
+
+            - Spot spot
+            - List<CheckIn> checkIns
+        }
+
+        Entity CheckIn {
+            Long id
+            Long atletaId
+            LocalDateTime horario
+            Double latitude
+            Double longitude
+
+            - List<RegistroDeAtividade> registrosDeAtividade
+        }
+
+        Entity RegistroDeAtividade {
+            Long id
+            Double distancia
+            Long duracaoSegundos
+            Double intensidade
+        }
+
+        Service ValidarCheckIn {
+            void executar(Long atletaId, Long sessionId, Double latitude, Double longitude);
+        }
+
+        Service MotorDeMatchAutomatico {
+            List<Long> executar(Long sessionId);
+        }
+    }
+}
