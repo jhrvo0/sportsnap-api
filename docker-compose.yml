@@ -1,0 +1,93 @@
+services:
+  # ==================== BANCOS DE DADOS ====================
+
+  postgres-gamification:
+    image: postgres:16-alpine
+    container_name: sportsnap-db-gamification
+    environment:
+      POSTGRES_DB: sportsnap_gamification
+      POSTGRES_USER: sportsnap
+      POSTGRES_PASSWORD: sportsnap
+    ports:
+      - "5433:5432"
+    volumes:
+      - pgdata-gamification:/var/lib/postgresql/data
+
+  postgres-marketplace:
+    image: postgres:16-alpine
+    container_name: sportsnap-db-marketplace
+    environment:
+      POSTGRES_DB: sportsnap_marketplace
+      POSTGRES_USER: sportsnap
+      POSTGRES_PASSWORD: sportsnap
+    ports:
+      - "5434:5432"
+    volumes:
+      - pgdata-marketplace:/var/lib/postgresql/data
+
+  postgres-session:
+    image: postgres:16-alpine
+    container_name: sportsnap-db-session
+    environment:
+      POSTGRES_DB: sportsnap_session
+      POSTGRES_USER: sportsnap
+      POSTGRES_PASSWORD: sportsnap
+    ports:
+      - "5435:5432"
+    volumes:
+      - pgdata-session:/var/lib/postgresql/data
+
+  # ==================== SERVIÇOS ====================
+
+  gamification-service:
+    build:
+      context: ./sportsnap-gamification-service
+      dockerfile: Dockerfile
+    container_name: sportsnap-gamification
+    ports:
+      - "8081:8081"
+    environment:
+      DB_HOST: postgres-gamification
+      DB_PORT: 5432
+      DB_NAME: sportsnap_gamification
+      DB_USER: sportsnap
+      DB_PASS: sportsnap
+    depends_on:
+      - postgres-gamification
+
+  marketplace-service:
+    build:
+      context: ./sportsnap-marketplace-service
+      dockerfile: Dockerfile
+    container_name: sportsnap-marketplace
+    ports:
+      - "8082:8082"
+    environment:
+      DB_HOST: postgres-marketplace
+      DB_PORT: 5432
+      DB_NAME: sportsnap_marketplace
+      DB_USER: sportsnap
+      DB_PASS: sportsnap
+    depends_on:
+      - postgres-marketplace
+
+  session-service:
+    build:
+      context: ./sportsnap-session-service
+      dockerfile: Dockerfile
+    container_name: sportsnap-session
+    ports:
+      - "8083:8083"
+    environment:
+      DB_HOST: postgres-session
+      DB_PORT: 5432
+      DB_NAME: sportsnap_session
+      DB_USER: sportsnap
+      DB_PASS: sportsnap
+    depends_on:
+      - postgres-session
+
+volumes:
+  pgdata-gamification:
+  pgdata-marketplace:
+  pgdata-session:
