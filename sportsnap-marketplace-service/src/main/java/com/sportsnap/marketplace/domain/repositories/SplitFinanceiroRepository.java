@@ -9,5 +9,5 @@ public interface SplitFinanceiroRepository {
 
     Optional<SplitFinanceiro> findById(Long id);
 
-    Optional<SplitFinanceiro> findByLicencaId(Long licencaId);
+    Optional<SplitFinanceiro> findByLicencaDeImagemId(Long licencaId);
 }

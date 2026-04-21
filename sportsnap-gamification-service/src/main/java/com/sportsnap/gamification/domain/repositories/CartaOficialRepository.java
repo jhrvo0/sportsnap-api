@@ -12,5 +12,5 @@ public interface CartaOficialRepository {
 
     Optional<CartaOficial> findByAtletaId(Long atletaId);
 
-    List<CartaOficial> findAllOrderByOverallDesc();
+    List<CartaOficial> findAllByOrderByOverallDesc();
 }

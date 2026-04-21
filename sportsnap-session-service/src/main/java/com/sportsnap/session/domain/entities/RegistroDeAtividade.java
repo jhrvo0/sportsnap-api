@@ -1,7 +1,6 @@
 package com.sportsnap.session.domain.entities;
 
 import jakarta.persistence.*;
-import java.time.Duration;
 
 @Entity
 @Table(name = "registros_de_atividade")
