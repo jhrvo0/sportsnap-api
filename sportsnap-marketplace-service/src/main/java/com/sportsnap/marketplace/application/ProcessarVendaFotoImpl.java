@@ -17,6 +17,17 @@ import java.math.RoundingMode;
  * RN03 — Integridade do Split:
  * Toda venda de LicencaDeImagem deve gerar atomicamente um credito
  * para o Fotografo e um registro de taxa para a plataforma.
+ *
+ * Controle de Concorrencia na Persistencia:
+ * Utiliza JPA Pessimistic Write Lock (findByIdComLock) para garantir
+ * que apenas uma transacao por vez possa processar a venda de uma foto.
+ *
+ * Cenario real: Dois atletas tentam comprar a licenca da mesma foto
+ * simultaneamente. O lock pessimista garante que o segundo espera o
+ * primeiro concluir, evitando vendas duplicadas.
+ *
+ * Alem do lock pessimista, a entidade Foto possui @Version (optimistic lock)
+ * como segunda camada de protecao contra conflitos de escrita.
  */
 @Service
 public class ProcessarVendaFotoImpl implements ProcessarVendaFoto {
@@ -40,7 +51,8 @@ public class ProcessarVendaFotoImpl implements ProcessarVendaFoto {
     @Override
     @Transactional
     public void executar(Long atletaId, Long fotoId) {
-        Foto foto = fotoRepository.findById(fotoId)
+        // JPA Pessimistic Lock: bloqueia a linha no banco ate o fim da transacao
+        Foto foto = fotoRepository.findByIdComLock(fotoId)
                 .orElseThrow(() -> new IllegalArgumentException("Foto nao encontrada: " + fotoId));
 
         // Criar licenca
@@ -54,7 +66,7 @@ public class ProcessarVendaFotoImpl implements ProcessarVendaFoto {
         SplitFinanceiro split = new SplitFinanceiro(valorFotografo, taxaPlataforma, licenca);
         splitRepository.save(split);
 
-        // Salvar foto para incrementar @Version (optimistic lock)
+        // Salvar foto para incrementar @Version (optimistic lock — segunda camada)
         fotoRepository.save(foto);
     }
 }
