@@ -87,6 +87,29 @@ services:
     depends_on:
       - postgres-session
 
+  # ==================== FRONTEND WEB ====================
+
+  web:
+    build:
+      context: ./sportsnap-web
+      dockerfile: Dockerfile
+    container_name: sportsnap-web
+    ports:
+      - "8080:8080"
+    environment:
+      DB_HOST: postgres-gamification
+      DB_PORT: 5432
+      DB_NAME: sportsnap_web
+      DB_USER: sportsnap
+      DB_PASS: sportsnap
+      GAMIFICATION_URL: http://gamification-service:8081
+      MARKETPLACE_URL: http://marketplace-service:8082
+      SESSION_URL: http://session-service:8083
+    depends_on:
+      - gamification-service
+      - marketplace-service
+      - session-service
+
 volumes:
   pgdata-gamification:
   pgdata-marketplace:

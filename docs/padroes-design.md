@@ -1,6 +1,6 @@
 # Padroes de Design — SportSnap
 
-## Padroes Implementados (4 — 1 por integrante)
+## Padroes Implementados (6 total — 4 obrigatorios + 2 extras)
 
 ### 1. Strategy (Antonio)
 **Localizacao:** `sportsnap-gamification-service`
@@ -92,4 +92,43 @@ ProcessadorFoto processador = new ResizeDecorator(
 );
 String resultado = processador.processar("foto.jpg");
 // resultado: "thumb_watermark_foto.jpg"
+```
+
+---
+
+### 5. Iterator (Extra)
+**Localizacao:** `sportsnap-gamification-service`
+
+**Problema:** Percorrer o ranking de atletas filtrando apenas cartas sincronizadas, sem expor a estrutura interna da colecao.
+
+**Solucao:** `RankingIterator` implementa `Iterator<CartaOficial>` com logica de negocio (filtra cartas nao reveladas).
+
+**Arquivos:**
+- `application/RankingIterator.java` — iterador customizado
+
+```java
+// Pattern: Iterator
+RankingIterator it = new RankingIterator(cartasOrdenadas);
+while (it.hasNext()) {
+    CartaOficial carta = it.next();
+    System.out.println("#" + it.getPosicaoAtual() + " — Overall: " + carta.getOverall());
+}
+```
+
+---
+
+### 6. Proxy (Extra)
+**Localizacao:** `sportsnap-gamification-service`
+
+**Problema:** Consultas frequentes ao ranking geram carga desnecessaria no banco quando os dados nao mudaram.
+
+**Solucao:** `RankingProxy` intercepta chamadas ao repositorio e retorna dados do cache (TTL 30s).
+
+**Arquivos:**
+- `application/RankingProxy.java` — proxy com cache e ConcurrentHashMap
+
+```java
+// Pattern: Proxy — cache transparente
+List<CartaOficial> ranking = rankingProxy.getRanking(); // cache hit ou miss
+rankingProxy.invalidarCache(); // invalida apos sincronizacao
 ```
