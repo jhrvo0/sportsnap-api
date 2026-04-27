@@ -40,5 +40,6 @@ target/cucumber-reports/
 # Arquivos internos da equipe (nao commitar)
 apresentacao.md
 prompt-figma.md
+fccpd.md
 .claude
 CLAUDE.md

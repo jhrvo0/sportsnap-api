@@ -30,7 +30,7 @@ public class FotosView extends VerticalLayout {
             add(titulo, new Paragraph("Nenhuma foto sugerida no momento. Faca check-in em uma sessao primeiro."));
         } else {
             HorizontalLayout grid = new HorizontalLayout();
-            grid.setFlexWrap(HorizontalLayout.FlexWrap.WRAP);
+            grid.getStyle().set("flex-wrap", "wrap");
 
             for (Map<String, Object> licenca : licencas) {
                 VerticalLayout card = new VerticalLayout();

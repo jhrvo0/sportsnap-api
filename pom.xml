@@ -22,9 +22,7 @@
         <module>sportsnap-gamification-service</module>
         <module>sportsnap-marketplace-service</module>
         <module>sportsnap-session-service</module>
-        <!-- Descomentar quando tiver internet para baixar Vaadin:
         <module>sportsnap-web</module>
-        -->
     </modules>
 
     <properties>
