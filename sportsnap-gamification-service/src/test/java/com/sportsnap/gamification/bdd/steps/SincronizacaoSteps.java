@@ -37,6 +37,7 @@ public class SincronizacaoSteps {
     private Double overallAntes;
     private boolean possuiLicencaValida;
     private Exception excecaoCapturada;
+    private Double overallCom100Xp;
 
     @Before
     public void setUp() {
@@ -129,5 +130,21 @@ public class SincronizacaoSteps {
         CartaOficial cartaAtualizada = cartaOficialRepository.findByAtletaId(atleta.getId()).orElseThrow();
         assertEquals(overallAntes, cartaAtualizada.getOverall(),
                 "Overall nao deveria ter mudado");
+    }
+
+    @E("possui {int} pontos de XP acumulado")
+    public void possuiXpAcumulado(int xp) {
+        statusPotencial.setXpAcumulado((double) xp);
+        statusPotencial = statusPotencialRepository.save(statusPotencial);
+        // Guardar o overall do cenario com 100 XP para comparacao
+        overallCom100Xp = cartaOficialRepository.findByAtletaId(atleta.getId())
+                .map(CartaOficial::getOverall).orElse(50.0);
+    }
+
+    @E("o Overall final é maior que o Overall com 100 XP")
+    public void overallMaiorQue100Xp() {
+        CartaOficial cartaAtualizada = cartaOficialRepository.findByAtletaId(atleta.getId()).orElseThrow();
+        assertTrue(cartaAtualizada.getOverall() > overallCom100Xp,
+                "Overall com 200 XP deveria ser maior que Overall base");
     }
 }

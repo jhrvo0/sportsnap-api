@@ -18,3 +18,12 @@ Funcionalidade: Venda de Foto e Licença de Imagem
     Quando ambas as compras são processadas
     Então apenas uma compra é concluída com sucesso
     E a outra recebe um erro de conflito de concorrência
+
+  Cenário: Split financeiro respeita percentuais corretos
+    Dado que o Fotografo "Ana" possui um Lote com fotos de uma Sessão
+    E o Atleta "Pedro" possui um CheckIn dentro do intervalo da Sessão
+    E existe uma Foto com timestamp EXIF compatível com o CheckIn
+    Quando o Atleta adquire a LicencaDeImagem da Foto
+    Então a LicencaDeImagem é registrada com o preço correto
+    E o crédito do Fotografo corresponde a 70 por cento do preço
+    E a taxa da plataforma corresponde a 30 por cento do preço

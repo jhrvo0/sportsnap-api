@@ -22,7 +22,6 @@
         <module>sportsnap-gamification-service</module>
         <module>sportsnap-marketplace-service</module>
         <module>sportsnap-session-service</module>
-        <module>sportsnap-web</module>
     </modules>
 
     <properties>

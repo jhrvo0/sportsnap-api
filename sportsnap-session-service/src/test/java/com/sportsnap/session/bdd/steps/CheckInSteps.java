@@ -36,6 +36,7 @@ public class CheckInSteps {
     private Spot spot;
     private Session session;
     private Long atletaId;
+    private Long atletaId2;
     private Exception excecaoCapturada;
 
     @Before
@@ -110,5 +111,19 @@ public class CheckInSteps {
         assertNotNull(excecaoCapturada);
         assertTrue(excecaoCapturada.getMessage().contains(mensagem),
                 "Mensagem de erro deveria conter: " + mensagem);
+    }
+
+    @E("o Atleta {string} realiza o CheckIn com localização próxima ao Spot")
+    public void outroAtletaRealizaCheckIn(String nome) {
+        atletaId2 = 3L;
+        validarCheckIn.executar(atletaId2, session.getId(), spot.getLatitude(), spot.getLongitude());
+    }
+
+    @Então("ambos os CheckIns são registrados com sucesso")
+    public void ambosCheckInsRegistrados() {
+        List<CheckIn> checkIns1 = checkInRepository.findByAtletaId(atletaId);
+        List<CheckIn> checkIns2 = checkInRepository.findByAtletaId(atletaId2);
+        assertFalse(checkIns1.isEmpty(), "CheckIn do primeiro atleta deveria existir");
+        assertFalse(checkIns2.isEmpty(), "CheckIn do segundo atleta deveria existir");
     }
 }

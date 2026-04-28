@@ -10,7 +10,8 @@ O sistema e composto por **3 microservicos** independentes que se comunicam via 
 sportsnap-api/
 ├── sportsnap-gamification-service   (porta 8081) — Core Domain
 ├── sportsnap-marketplace-service    (porta 8082) — Supporting Domain
-└── sportsnap-session-service        (porta 8083) — Generic Domain
+├── sportsnap-session-service        (porta 8083) — Generic Domain
+└── sportsnap-web                    (porta 8080) — Frontend Next.js
 ```
 
 | Servico | Responsabilidade |
@@ -26,9 +27,10 @@ Cada servico possui seu proprio banco PostgreSQL, garantindo isolamento de dados
 | Camada | Tecnologia |
 |---|---|
 | Backend | Java 21 + Spring Boot 3.4.4 |
+| Frontend | Next.js 14 + Tailwind CSS + TypeScript |
 | Persistencia | JPA / Hibernate + PostgreSQL 16 |
 | Testes BDD | Cucumber 7.20 + JUnit 5 |
-| Build | Maven (multi-module) |
+| Build | Maven (backend) + npm (frontend) |
 | Containerizacao | Docker + Docker Compose |
 | Arquitetura | Clean Architecture + DDD |
 
@@ -36,6 +38,7 @@ Cada servico possui seu proprio banco PostgreSQL, garantindo isolamento de dados
 
 - **Java 21** (JDK)
 - **Maven 3.9+** (ou use o wrapper `./mvnw`)
+- **Node.js 20+** e **npm** (para o frontend)
 - **Docker** e **Docker Compose**
 
 ## Como Executar
@@ -46,11 +49,11 @@ Cada servico possui seu proprio banco PostgreSQL, garantindo isolamento de dados
 # 1. Compilar os JARs
 ./mvnw clean package -DskipTests
 
-# 2. Subir todos os servicos + bancos de dados
-docker-compose up --build
+# 2. Subir todos os servicos + bancos de dados + frontend
+docker compose up --build
 
 # 3. Subir apenas um servico especifico
-docker-compose up gamification-service
+docker compose up gamification-service
 ```
 
 ### Sem Docker (desenvolvimento local)
@@ -70,6 +73,7 @@ cd sportsnap-gamification-service
 
 | Servico | Porta App | Porta DB (host) |
 |---|---|---|
+| **Web (Frontend)** | **8080** | — |
 | Gamification | 8081 | 5433 |
 | Marketplace | 8082 | 5434 |
 | Session | 8083 | 5435 |

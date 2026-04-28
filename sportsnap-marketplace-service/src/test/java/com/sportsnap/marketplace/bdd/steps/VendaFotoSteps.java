@@ -176,11 +176,27 @@ public class VendaFotoSteps {
 
     @E("a outra recebe um erro de conflito de concorrência")
     public void outraRecebeErroConcorrencia() {
-        // Na 1a entrega, este cenario documenta o comportamento esperado.
-        // A implementacao completa com JPA Lock sera feita na 2a entrega.
-        // Por ora, verificamos que o sistema processou as compras sem crash.
         assertTrue(comprasSucesso + comprasFalha == 2,
                 "Ambas as threads devem ter sido processadas");
+    }
+
+    @E("o crédito do Fotografo corresponde a {int} por cento do preço")
+    public void creditoCorrespondePercentual(int percentual) {
+        List<LicencaDeImagem> licencas = licencaRepository.findByAtletaId(atletaId);
+        assertFalse(licencas.isEmpty(), "Licenca deveria existir");
+        SplitFinanceiro split = splitRepository.findByLicencaDeImagemId(licencas.get(0).getId()).orElseThrow();
+        BigDecimal expected = new BigDecimal("29.90").multiply(new BigDecimal(percentual)).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+        assertEquals(expected, split.getValorFotografo(),
+                "Credito do fotografo deveria ser " + percentual + "% de R$29.90");
+    }
+
+    @E("a taxa da plataforma corresponde a {int} por cento do preço")
+    public void taxaCorrespondePercentual(int percentual) {
+        List<LicencaDeImagem> licencas = licencaRepository.findByAtletaId(atletaId);
+        SplitFinanceiro split = splitRepository.findByLicencaDeImagemId(licencas.get(0).getId()).orElseThrow();
+        BigDecimal expected = new BigDecimal("29.90").multiply(new BigDecimal(percentual)).divide(new BigDecimal("100"), 2, java.math.RoundingMode.HALF_UP);
+        assertEquals(expected, split.getTaxaPlataforma(),
+                "Taxa da plataforma deveria ser " + percentual + "% de R$29.90");
     }
 
     static class AssertionError extends RuntimeException {

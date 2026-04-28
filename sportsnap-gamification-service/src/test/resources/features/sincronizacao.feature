@@ -16,3 +16,12 @@ Funcionalidade: Sincronização da Carta do Atleta
     Quando o Atleta tenta disparar a Sincronizacao
     Então a sincronização é rejeitada
     E a CartaOficial permanece inalterada
+
+  Cenário: Overall aumenta proporcionalmente ao XP acumulado
+    Dado que o Atleta "Carlos" possui um CheckIn registrado hoje
+    E possui uma LicencaDeImagem adquirida após o último Reveal
+    E possui 200 pontos de XP acumulado
+    Quando o Atleta dispara a Sincronizacao
+    Então os StatusPotencial são transferidos para a CartaOficial
+    E o Overall é recalculado
+    E o Overall final é maior que o Overall com 100 XP

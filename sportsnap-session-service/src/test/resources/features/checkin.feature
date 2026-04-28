@@ -15,3 +15,10 @@ Funcionalidade: Check-in do Atleta em uma Sessão
     Quando o Atleta "Maria" tenta realizar o CheckIn
     Então o CheckIn é rejeitado
     E uma mensagem de erro "Sessão encerrada" é exibida
+
+  Cenário: Dois atletas fazem check-in na mesma sessão
+    Dado que existe um Spot "Praia de Boa Viagem" com coordenadas válidas
+    E existe uma Session ativa neste Spot
+    Quando o Atleta "João" realiza o CheckIn com localização próxima ao Spot
+    E o Atleta "Maria" realiza o CheckIn com localização próxima ao Spot
+    Então ambos os CheckIns são registrados com sucesso

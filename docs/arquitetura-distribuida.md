@@ -50,6 +50,7 @@
 | **Gamification** | 8081 | sportsnap_gamification | Core | Shadow Stats, Reveal, Ranking, Overall |
 | **Marketplace** | 8082 | sportsnap_marketplace | Supporting | Fotos, Licencas, Split Financeiro |
 | **Session** | 8083 | sportsnap_session | Generic | Spots, Sessions, Check-ins, Match |
+| **Web (Next.js)** | 8080 | — (sem banco) | Frontend | Interface web, consome APIs REST dos 3 servicos |
 
 ## Comunicacao entre Servicos
 
