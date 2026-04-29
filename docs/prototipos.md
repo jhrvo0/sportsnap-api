@@ -1,7 +1,16 @@
 # Prototipos — SportSnap
 
-> **Nota:** Os wireframes visuais devem ser criados em Figma ou ferramenta equivalente.
-> Este documento descreve as telas e fluxos principais para guiar a criacao dos prototipos.
+## Prototipo Interativo (Figma)
+
+**Link:** [SportSnap - Figma Make](https://www.figma.com/make/b89gS0ka5aeTp6gCtqvf75/SportSnap?fullscreen=1&t=swceaoCWC7Z72Xpx-1)
+
+> Para testar o fluxo completo, utilize as credenciais de teste:
+> - **Email:** teste@gmail.com
+> - **Senha:** teste
+
+---
+
+> Este documento descreve as telas e fluxos principais do prototipo.
 
 ---
 

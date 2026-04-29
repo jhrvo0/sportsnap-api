@@ -17,8 +17,8 @@ sportsnap-api/
 | Modulo | Responsabilidade |
 |---|---|
 | **Gamification** | Shadow Stats, Reveal/Sincronizacao, Ranking, Calculo de Overall |
-| **Marketplace** | Fotos, Licencas de Imagem, Split Financeiro, Upload em Lote |
-| **Session** | Spots, Sessoes, Check-ins, Registros de Atividade, Motor de Match |
+| **Marketplace** | Fotos, Lotes, Licencas de Imagem, Split Financeiro, Motor de Sugestao |
+| **Session** | Spots, Sessoes, Check-ins, Registros de Atividade |
 
 ## 1a Entrega — Foco no Dominio e BDD
 
@@ -26,19 +26,21 @@ Esta entrega foca na **modelagem do dominio puro** com validacao via **testes BD
 
 ### Escopo
 
-- **8 funcionalidades nao triviais** (2 por integrante), cobrindo todas as User Stories (US01-US08)
-- Regras de negocio blindadas na camada de Dominio
-- Repositorios in-memory para isolamento total dos testes
+- **8 historias completas** (2 por integrante), cada uma com multiplas operacoes (CRUD + regras de negocio) — nao apenas verbos isolados
+- Regras de negocio blindadas na camada de Dominio (entidades puras sem JPA)
+- Value Objects tipados para todos os IDs (`AtletaId`, `SpotId`, `FotoId`, etc.)
+- Domain Events publicados via `EventoBarramento`
+- Repositorios in-memory em `infraestrutura/memoria/` para isolamento total dos testes
 - Linguagem Onipresente aplicada em todo o codigo e documentacao
 
-### Funcionalidades por Integrante
+### Historias por Integrante
 
-| Integrante | Funcionalidades |
-|---|---|
-| **Antonio** | US01 (Check-in Georreferenciado) + US02 (Registro e Calculo de Atividade) |
-| **Galileu** | US03 (Upload e Extracao EXIF em Lote) + US04 (Dashboard de Controle e Conversao) |
-| **Marco** | US05 (Comprar Licenca com Split Financeiro) + US06 (Motor de Match Automatico) |
-| **jhrvo0** | US07 (Sincronizar Carta / Reveal) + US08 (Calculo de Overall Dinamico) |
+| Integrante | Historia 1 | Historia 2 |
+|---|---|---|
+| **Antônio Paes** | H03 — Gerenciar Lotes de Fotos | H04 — Dashboard e Metricas do Fotografo |
+| **Galileu Calaça** | H07 — Sincronizar Carta do Atleta | H08 — Ranking e Evolucao |
+| **Marco Maciel** | H05 — Comprar Licenca de Foto | H06 — Motor de Sugestao de Fotos |
+| **João Henrique** | H01 — Gerenciar Sessao de Treino | H02 — Gerenciar Check-in e Atividade |
 
 ## Stack Tecnologica
 
@@ -47,6 +49,7 @@ Esta entrega foca na **modelagem do dominio puro** com validacao via **testes BD
 | Linguagem | Java 21 |
 | Framework | Spring Boot 3.4.4 |
 | Testes BDD | Cucumber 7.20 + JUnit 5 |
+| Validacao de dominio | Apache Commons Lang3 (`Validate`) |
 | Build | Maven (wrapper incluido) |
 | Arquitetura | Clean Architecture + DDD |
 
@@ -58,7 +61,7 @@ Esta entrega foca na **modelagem do dominio puro** com validacao via **testes BD
 ## Como Executar os Testes
 
 ```bash
-# Rodar todos os testes (BDD + unitarios)
+# Rodar todos os testes (BDD + contexto Spring)
 ./mvnw clean test
 
 # Rodar apenas testes BDD (Cucumber)
@@ -72,45 +75,50 @@ Esta entrega foca na **modelagem do dominio puro** com validacao via **testes BD
 
 ## Estrutura de Pacotes (Clean Architecture)
 
-Cada modulo segue a mesma estrutura:
+Cada modulo segue a mesma estrutura, seguindo o padrao de referencia do professor:
 
 ```
 com.sportsnap.<servico>/
-├── domain/
-│   ├── entities/          # Entidades puras (POJOs) da Linguagem Onipresente
-│   ├── usecases/          # Interfaces dos casos de uso
-│   └── repositories/      # Interfaces (ports) dos repositorios
-└── application/           # Implementacoes dos use cases e repositorios in-memory
+├── dominio/                    # PURO — zero dependencias externas (JPA, Spring, HTTP)
+│   ├── <contexto>/             # sub-pacote por bounded sub-context
+│   │   ├── XxxId.java          # Value Object para identidade
+│   │   ├── Xxx.java            # Entidade (2 construtores + Validate + Domain Events)
+│   │   ├── XxxRepositorio.java # interface (port)
+│   │   └── XxxServico.java     # servico de dominio
+│   └── evento/EventoBarramento.java
+└── infraestrutura/
+    ├── memoria/XxxRepositorioMemoria.java   # adapter in-memory (1a entrega)
+    └── evento/EventoBarramentoSpring.java   # publica via ApplicationEventPublisher
 ```
 
 ## Cenarios BDD (Cucumber)
 
-Cada funcionalidade possui um arquivo `.feature` em portugues com cenarios que validam as regras de negocio:
+Cada historia possui um arquivo `.feature` em portugues com multiplos cenarios (5 a 9 por historia) cobrindo golden path, edge cases e regras de negocio:
 
-| Modulo | Feature | User Story |
+| Modulo | Feature | Historia |
 |---|---|---|
-| Session | `checkin.feature` | US01 — Check-in Georreferenciado |
-| Session | `registro-atividade.feature` | US02 — Registro de Atividade |
-| Marketplace | `upload-lote.feature` | US03 — Upload em Lote |
-| Marketplace | `dashboard-fotografo.feature` | US04 — Dashboard do Fotografo |
-| Marketplace | `venda-foto.feature` | US05 — Compra de Licenca |
-| Session | `match-automatico.feature` | US06 — Motor de Match |
-| Gamification | `sincronizacao.feature` | US07 — Sincronizacao/Reveal |
-| Gamification | `calculo-overall.feature` | US08 — Calculo de Overall |
+| Session | `h01-gerenciar-sessao.feature` | H01 — Gerenciar Sessao de Treino |
+| Session | `h02-checkin-atividade.feature` | H02 — Gerenciar Check-in e Atividade |
+| Marketplace | `h03-gerenciar-lote.feature` | H03 — Gerenciar Lotes de Fotos |
+| Marketplace | `h04-dashboard-fotografo.feature` | H04 — Dashboard do Fotografo |
+| Marketplace | `h05-comprar-licenca.feature` | H05 — Comprar Licenca de Foto |
+| Marketplace | `h06-motor-sugestao.feature` | H06 — Motor de Sugestao |
+| Gamification | `h07-sincronizar-carta.feature` | H07 — Sincronizar Carta do Atleta |
+| Gamification | `h08-ranking-evolucao.feature` | H08 — Ranking e Evolucao |
 
 ## Documentacao
 
 - [`docs/dominio.md`](docs/dominio.md) — Descricao do dominio, linguagem onipresente, regras de negocio, niveis DDD
-- [`docs/user-story-map.md`](docs/user-story-map.md) — User Story Map com detalhamento de US01-US08
+- [`docs/user-story-map.md`](docs/user-story-map.md) — Mapa das 8 historias completas (H01-H08) com operacoes detalhadas
 - [`docs/prototipos.md`](docs/prototipos.md) — Prototipos de baixa e alta fidelidade
 - [`docs/sportsnap.cml`](docs/sportsnap.cml) — Modelo Context Mapper (DDD)
 
 ## Equipe
 
-- **Antonio Paes** — [@AntonioPaess](https://github.com/AntonioPaess)
-- **Galileu Moares** — [@GalileuCMMoares](https://github.com/GalileuCMMoares)
+- **Antônio Paes** — [@AntonioPaess](https://github.com/AntonioPaess)
+- **Galileu Calaça** — [@GalileuCMMoares](https://github.com/GalileuCMMoares)
 - **Marco Maciel** — [@oMarcoMaciel](https://github.com/oMarcoMaciel)
-- **jhrvo0** — [@jhrvo0](https://github.com/jhrvo0)
+- **João Henrique** — [@jhrvo0](https://github.com/jhrvo0)
 
 **Disciplina:** Engenharia de Requisitos  
 **Instituicao:** CESAR School

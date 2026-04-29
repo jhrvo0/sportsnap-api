@@ -1,0 +1,113 @@
+package com.sportsnap.gamification.dominio.sincronizacao;
+
+import static org.apache.commons.lang3.Validate.notNull;
+
+import com.sportsnap.gamification.dominio.atleta.AtletaId;
+import com.sportsnap.gamification.dominio.carta.CartaOficial;
+import com.sportsnap.gamification.dominio.carta.CartaOficialRepositorio;
+import com.sportsnap.gamification.dominio.evento.EventoBarramento;
+import com.sportsnap.gamification.dominio.potencial.StatusPotencial;
+import com.sportsnap.gamification.dominio.potencial.StatusPotencialRepositorio;
+
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+
+public class SincronizacaoServico {
+
+    private final CartaOficialRepositorio cartaRepositorio;
+    private final StatusPotencialRepositorio statusRepositorio;
+    private final LicencaRepositorio licencaRepositorio;
+    private final EventoBarramento barramento;
+
+    public SincronizacaoServico(CartaOficialRepositorio cartaRepositorio,
+                                  StatusPotencialRepositorio statusRepositorio,
+                                  LicencaRepositorio licencaRepositorio,
+                                  EventoBarramento barramento) {
+        notNull(cartaRepositorio, "O repositorio de CartaOficial nao pode ser nulo");
+        notNull(statusRepositorio, "O repositorio de StatusPotencial nao pode ser nulo");
+        notNull(licencaRepositorio, "O repositorio de Licenca nao pode ser nulo");
+        notNull(barramento, "O barramento de eventos nao pode ser nulo");
+        this.cartaRepositorio = cartaRepositorio;
+        this.statusRepositorio = statusRepositorio;
+        this.licencaRepositorio = licencaRepositorio;
+        this.barramento = barramento;
+    }
+
+    public boolean isElegivel(AtletaId atletaId) {
+        notNull(atletaId, "O id do Atleta nao pode ser nulo");
+        var status = statusRepositorio.obterPorAtleta(atletaId);
+        if (status.isEmpty() || status.get().getXpAcumulado() <= 0) {
+            return false;
+        }
+        var carta = cartaRepositorio.obterPorAtleta(atletaId);
+        if (carta.isEmpty()) {
+            return false;
+        }
+        var ultimaSync = carta.get().getUltimaSincronizacao();
+        var instante = ultimaSync != null ? ultimaSync : LocalDateTime.MIN;
+        return licencaRepositorio.existeLicencaPosterior(atletaId, instante);
+    }
+
+    public StatusPotencial consultarShadowStats(AtletaId atletaId) {
+        notNull(atletaId, "O id do Atleta nao pode ser nulo");
+        return statusRepositorio.obterPorAtleta(atletaId)
+            .orElseThrow(() -> new IllegalStateException("StatusPotencial nao encontrado para o atleta: " + atletaId));
+    }
+
+    public CartaOficial sincronizar(AtletaId atletaId) {
+        notNull(atletaId, "O id do Atleta nao pode ser nulo");
+
+        StatusPotencial status = statusRepositorio.obterPorAtleta(atletaId)
+            .orElseThrow(() -> new IllegalStateException("StatusPotencial nao encontrado para o atleta: " + atletaId));
+
+        CartaOficial carta = cartaRepositorio.obterPorAtleta(atletaId)
+            .orElseThrow(() -> new IllegalStateException("CartaOficial nao encontrada para o atleta: " + atletaId));
+
+        if (status.getXpAcumulado() <= 0) {
+            throw new IllegalStateException("Atleta nao possui XP acumulado para sincronizar");
+        }
+
+        var ultimaSync = carta.getUltimaSincronizacao();
+        var instanteReferencia = ultimaSync != null ? ultimaSync : LocalDateTime.MIN;
+        if (!licencaRepositorio.existeLicencaPosterior(atletaId, instanteReferencia)) {
+            throw new IllegalStateException("RN01: sincronizacao requer licenca posterior a ultima Reveal");
+        }
+
+        double xpTotal = status.zerar();
+        carta.distribuirXp(xpTotal);
+
+        cartaRepositorio.salvar(carta);
+        statusRepositorio.salvar(status);
+
+        barramento.postar(new CartaSincronizadaEvento(carta, xpTotal));
+        return carta;
+    }
+
+    public List<CartaOficial> listarHistoricoSincronizacoes(AtletaId atletaId) {
+        notNull(atletaId, "O id do Atleta nao pode ser nulo");
+        Optional<CartaOficial> carta = cartaRepositorio.obterPorAtleta(atletaId);
+        if (carta.isEmpty() || !carta.get().isSincronizada()) {
+            return List.of();
+        }
+        return List.of(carta.get());
+    }
+
+    public static class CartaSincronizadaEvento {
+        private final CartaOficial carta;
+        private final double xpTransferido;
+
+        CartaSincronizadaEvento(CartaOficial carta, double xpTransferido) {
+            this.carta = carta;
+            this.xpTransferido = xpTransferido;
+        }
+
+        public CartaOficial getCarta() {
+            return carta;
+        }
+
+        public double getXpTransferido() {
+            return xpTransferido;
+        }
+    }
+}

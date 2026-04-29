@@ -1,0 +1,56 @@
+package com.sportsnap.session.dominio.sessao;
+
+import static org.apache.commons.lang3.Validate.notNull;
+
+import com.sportsnap.session.dominio.spot.SpotId;
+import com.sportsnap.session.dominio.spot.SpotRepositorio;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+public class SessaoServico {
+
+    private final SessaoRepositorio repositorio;
+    private final SpotRepositorio spotRepositorio;
+
+    public SessaoServico(SessaoRepositorio repositorio, SpotRepositorio spotRepositorio) {
+        notNull(repositorio, "O repositorio de Sessao nao pode ser nulo");
+        notNull(spotRepositorio, "O repositorio de Spot nao pode ser nulo");
+        this.repositorio = repositorio;
+        this.spotRepositorio = spotRepositorio;
+    }
+
+    public Sessao cadastrar(SpotId spotId, Periodo periodo, String descricao) {
+        spotRepositorio.obter(spotId)
+            .orElseThrow(() -> new IllegalArgumentException("Spot nao encontrado para cadastro de Sessao: " + spotId));
+        var sessao = new Sessao(spotId, periodo, descricao);
+        return repositorio.salvar(sessao);
+    }
+
+    public Sessao obter(SessaoId id) {
+        notNull(id, "O id da Sessao nao pode ser nulo");
+        return repositorio.obter(id)
+            .orElseThrow(() -> new IllegalArgumentException("Sessao nao encontrada: " + id));
+    }
+
+    public List<Sessao> listarAtivas() {
+        return repositorio.listarAtivas(LocalDateTime.now());
+    }
+
+    public List<Sessao> listarPorSpot(SpotId spotId) {
+        notNull(spotId, "O id do Spot nao pode ser nulo");
+        return repositorio.listarPorSpot(spotId);
+    }
+
+    public List<Sessao> listarPorPeriodo(LocalDateTime inicio, LocalDateTime fim) {
+        notNull(inicio, "O inicio do periodo nao pode ser nulo");
+        notNull(fim, "O fim do periodo nao pode ser nulo");
+        return repositorio.listarPorPeriodo(inicio, fim);
+    }
+
+    public void cancelar(SessaoId id) {
+        var sessao = obter(id);
+        sessao.cancelar(LocalDateTime.now());
+        repositorio.salvar(sessao);
+    }
+}
