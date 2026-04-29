@@ -10,4 +10,6 @@ public interface SplitFinanceiroRepository {
     Optional<SplitFinanceiro> findById(Long id);
 
     Optional<SplitFinanceiro> findByLicencaDeImagemId(Long licencaId);
+
+    void deleteAll();
 }

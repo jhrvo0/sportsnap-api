@@ -1,26 +1,11 @@
 package com.sportsnap.gamification.domain.entities;
 
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "atributos_esportivos")
 public class AtributoEsportivo {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private String nome;
-
-    @Column(nullable = false)
     private Double valor;
-
-    @Column(nullable = false)
     private Double peso;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "carta_oficial_id", nullable = false)
     private CartaOficial cartaOficial;
 
     public AtributoEsportivo() {}

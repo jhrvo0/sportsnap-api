@@ -13,4 +13,6 @@ public interface CheckInRepository {
     List<CheckIn> findByAtletaId(Long atletaId);
 
     List<CheckIn> findBySessionId(Long sessionId);
+
+    void deleteAll();
 }

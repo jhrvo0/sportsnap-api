@@ -1,30 +1,16 @@
 package com.sportsnap.gamification.domain.entities;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "cartas_oficiais")
 public class CartaOficial {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private Double overall;
-
     private String imagemUrl;
-
     private LocalDateTime ultimaSincronizacao;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "atleta_id", nullable = false, unique = true)
     private Atleta atleta;
-
-    @OneToMany(mappedBy = "cartaOficial", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<AtributoEsportivo> atributos = new ArrayList<>();
 
     public CartaOficial() {}

@@ -11,4 +11,6 @@ public interface SessionRepository {
     Optional<Session> findById(Long id);
 
     List<Session> findBySpotId(Long spotId);
+
+    void deleteAll();
 }

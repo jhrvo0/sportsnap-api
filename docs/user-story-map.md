@@ -55,7 +55,7 @@ Criterios de aceitacao:
 - Preview com marca d'agua e gerado automaticamente
 - Upload processa multiplas fotos em paralelo (concorrencia)
 
-**US04 — Gerenciar Lotes e Fotos**
+**US04 — Dashboard de Controle e Conversao [NT]**
 > Como Fotografo, quero visualizar e gerenciar meus lotes de fotos para acompanhar quais foram vendidas.
 
 Criterios de aceitacao:
@@ -76,7 +76,7 @@ Criterios de aceitacao:
 - SplitFinanceiro e gerado atomicamente: 70% Fotografo, 30% plataforma (RN03)
 - Em caso de compra concorrente, JPA Lock garante consistencia
 
-**US06 — Visualizar Fotos Sugeridas**
+**US06 — Motor de Match Automatico e Sugestoes [NT]**
 > Como Atleta, quero ver as fotos que correspondem as minhas sessoes para decidir quais comprar.
 
 Criterios de aceitacao:
@@ -109,26 +109,27 @@ Criterios de aceitacao:
 
 ---
 
-## Matriz de Responsabilidade
+## Matriz de Responsabilidade (1a e 2a Entregas)
 
-| Integrante | Funcionalidades |
+| Integrante | Funcionalidades Nao Triviais (Core Domain) |
 |---|---|
-| **Antonio** | US01 (Check-in) + US02 (Registro Atividade) |
-| **Galileu** | US03 (Upload Lote) + US04 (Gerenciar Lotes) |
-| **Marco** | US05 (Comprar Licenca) + US06 (Fotos Sugeridas) |
-| **jhrvo0** | US07 (Sincronizar Carta) + US08 (Calcular Overall) |
+| **Antonio** | US01 (Check-in Georreferenciado) + US02 (Registro e Calculo de Atividade) |
+| **Galileu** | US03 (Upload e Extracao EXIF em Lote) + US04 (Dashboard de Controle e Conversao) |
+| **Marco** | US05 (Comprar Licenca com Split Financeiro) + US06 (Motor de Match Automatico e Sugestoes) |
+| **jhrvo0** | US07 (Sincronizar Carta / Reveal) + US08 (Calculo de Overall Dinamico) |
 
 ---
 
 ## Prioridade de Implementacao
 
-```
-Release 1 (1a Entrega — BDD + Dominio):
-  US01, US02, US05, US07 — funcionalidades core com cenarios BDD
+**Release 1 (1a Entrega — Foco no Dominio e BDD):**
+**Escopo:** US01, US02, US03, US04, US05, US06, US07, US08.
+**Objetivo:** Modelagem completa das 8 funcionalidades nao triviais (2 por integrante) utilizando a Linguagem Onipresente. Blindagem das regras de negocio na camada de Dominio, validadas exclusivamente atraves de testes automatizados BDD (Cucumber). Nenhuma dependencia de UI ou banco de dados nesta fase.
 
-Release 2 (2a Entrega — Completa):
-  US03, US04, US06, US08 — funcionalidades complementares
-  + Padroes de design
-  + Concorrencia explicita
-  + Camada web
-```
+**Release 2 (2a Entrega — Infraestrutura, Web e Padroes):**
+**Escopo:** Integracao das USs da Release 1 com infraestrutura real.
+**Objetivo:**
+  + Implementar a camada de persistencia com mapeamento objeto-relacional (JPA).
+  + Desenvolver a camada de apresentacao Web (Controllers/Frontend).
+  + Implementar os 6 Padroes de Design exigidos (Iterator, Decorator, Observer, Proxy, Strategy, Template Method).
+  + Aplicar concorrencia explicita e analise de desempenho.

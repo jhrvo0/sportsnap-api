@@ -1,30 +1,16 @@
 package com.sportsnap.marketplace.domain.entities;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "lotes")
 public class Lote {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private Long sessionId;
-
     private Long spotId;
-
-    @Column(nullable = false)
     private LocalDateTime criadoEm;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "fotografo_id", nullable = false)
     private Fotografo fotografo;
-
-    @OneToMany(mappedBy = "lote", cascade = CascadeType.ALL)
     private List<Foto> fotos = new ArrayList<>();
 
     public Lote() {}

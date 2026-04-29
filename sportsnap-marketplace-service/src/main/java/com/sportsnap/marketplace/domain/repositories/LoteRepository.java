@@ -13,4 +13,6 @@ public interface LoteRepository {
     List<Lote> findBySessionId(Long sessionId);
 
     List<Lote> findByFotografoId(Long fotografoId);
+
+    void deleteAll();
 }

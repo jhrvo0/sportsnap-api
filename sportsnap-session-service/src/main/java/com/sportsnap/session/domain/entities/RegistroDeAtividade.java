@@ -1,28 +1,17 @@
 package com.sportsnap.session.domain.entities;
 
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "registros_de_atividade")
 public class RegistroDeAtividade {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
     private Double distancia;
-
     private Long duracaoSegundos;
-
-    private Double intensidade;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "check_in_id", nullable = false)
+    private String intensidade;
     private CheckIn checkIn;
+    private double xpCalculado;
 
     public RegistroDeAtividade() {}
 
-    public RegistroDeAtividade(Double distancia, Long duracaoSegundos, Double intensidade, CheckIn checkIn) {
+    public RegistroDeAtividade(Double distancia, Long duracaoSegundos, String intensidade, CheckIn checkIn) {
         this.distancia = distancia;
         this.duracaoSegundos = duracaoSegundos;
         this.intensidade = intensidade;
@@ -38,9 +27,12 @@ public class RegistroDeAtividade {
     public Long getDuracaoSegundos() { return duracaoSegundos; }
     public void setDuracaoSegundos(Long duracaoSegundos) { this.duracaoSegundos = duracaoSegundos; }
 
-    public Double getIntensidade() { return intensidade; }
-    public void setIntensidade(Double intensidade) { this.intensidade = intensidade; }
+    public String getIntensidade() { return intensidade; }
+    public void setIntensidade(String intensidade) { this.intensidade = intensidade; }
 
     public CheckIn getCheckIn() { return checkIn; }
     public void setCheckIn(CheckIn checkIn) { this.checkIn = checkIn; }
+
+    public double getXpCalculado() { return xpCalculado; }
+    public void setXpCalculado(double xpCalculado) { this.xpCalculado = xpCalculado; }
 }

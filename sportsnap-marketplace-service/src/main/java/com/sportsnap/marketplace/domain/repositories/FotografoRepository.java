@@ -13,4 +13,6 @@ public interface FotografoRepository {
     Optional<Fotografo> findByEmail(String email);
 
     List<Fotografo> findAll();
+
+    void deleteAll();
 }

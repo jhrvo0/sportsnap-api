@@ -12,7 +12,7 @@
 
     <artifactId>sportsnap-marketplace-service</artifactId>
     <name>SportSnap Marketplace Service</name>
-    <description>Supporting Domain: Carrinho, Pagamento, Licenças, Split</description>
+    <description>Supporting Domain: Fotos, Licencas de Imagem, Split Financeiro</description>
 
     <build>
         <plugins>

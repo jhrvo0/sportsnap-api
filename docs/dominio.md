@@ -113,11 +113,10 @@ Estas regras devem ser validadas nos **Use Cases**, nunca no banco ou controller
 - **Services:** Use cases que orquestram logica cross-aggregate (SincronizarCartaAtleta, ProcessarVendaFoto)
 
 ### 5.4 Nivel Operacional
-- **Arquitetura:** Clean Architecture com 3 camadas (domain, infrastructure, application)
-- **Persistencia:** JPA/Hibernate com PostgreSQL, isolamento por servico
-- **Comunicacao:** REST entre servicos
-- **Testes:** BDD com Cucumber, cenarios em portugues
-- **Deploy:** Docker Compose com 6 containers (3 apps + 3 bancos)
+- **Arquitetura:** Clean Architecture com 2 camadas na 1a entrega (domain, application)
+- **Persistencia:** Repositorios in-memory (sem dependencia de banco de dados na 1a entrega)
+- **Testes:** BDD com Cucumber, cenarios em portugues, validando regras de negocio no dominio puro
+- **Build:** Maven multi-module com 3 servicos independentes
 
 ---
 

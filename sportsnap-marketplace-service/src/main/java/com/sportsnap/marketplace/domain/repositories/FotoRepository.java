@@ -11,4 +11,6 @@ public interface FotoRepository {
     Optional<Foto> findById(Long id);
 
     List<Foto> findByLoteId(Long loteId);
+
+    void deleteAll();
 }

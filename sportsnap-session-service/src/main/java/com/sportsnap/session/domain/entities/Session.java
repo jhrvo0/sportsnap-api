@@ -1,29 +1,15 @@
 package com.sportsnap.session.domain.entities;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-@Entity
-@Table(name = "sessions")
 public class Session {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private LocalDateTime inicio;
-
-    @Column(nullable = false)
     private LocalDateTime fim;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "spot_id", nullable = false)
     private Spot spot;
-
-    @OneToMany(mappedBy = "session", cascade = CascadeType.ALL)
     private List<CheckIn> checkIns = new ArrayList<>();
 
     public Session() {}

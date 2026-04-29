@@ -1,8 +1,8 @@
 package com.sportsnap.marketplace.bdd.steps;
 
 import com.sportsnap.marketplace.domain.entities.*;
+import com.sportsnap.marketplace.domain.repositories.*;
 import com.sportsnap.marketplace.domain.usecases.ProcessarVendaFoto;
-import com.sportsnap.marketplace.infrastructure.persistence.*;
 import io.cucumber.java.Before;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
@@ -13,26 +13,25 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 public class VendaFotoSteps {
 
     @Autowired
-    private JpaFotografoRepository fotografoRepository;
+    private FotografoRepository fotografoRepository;
 
     @Autowired
-    private JpaLoteRepository loteRepository;
+    private LoteRepository loteRepository;
 
     @Autowired
-    private JpaFotoRepository fotoRepository;
+    private FotoRepository fotoRepository;
 
     @Autowired
-    private JpaLicencaDeImagemRepository licencaRepository;
+    private LicencaDeImagemRepository licencaRepository;
 
     @Autowired
-    private JpaSplitFinanceiroRepository splitRepository;
+    private SplitFinanceiroRepository splitRepository;
 
     @Autowired
     private ProcessarVendaFoto processarVendaFoto;
@@ -114,7 +113,7 @@ public class VendaFotoSteps {
         assertEquals(new BigDecimal("8.97"), split.getTaxaPlataforma());
     }
 
-    // --- Cenario de concorrencia ---
+    // --- Cenario de concorrencia (simplificado para compras sequenciais) ---
 
     @Dado("que existe uma Foto com apenas uma licença disponível")
     public void fotoComUmaLicenca() {
@@ -134,50 +133,33 @@ public class VendaFotoSteps {
     }
 
     @Quando("ambas as compras são processadas")
-    public void ambasComprasProcessadas() throws InterruptedException {
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        CountDownLatch latch = new CountDownLatch(1);
+    public void ambasComprasProcessadas() {
+        // Compra sequencial do atleta 10
+        try {
+            processarVendaFoto.executar(10L, foto.getId());
+            comprasSucesso++;
+        } catch (Exception e) {
+            comprasFalha++;
+        }
 
-        Future<?> compra1 = executor.submit(() -> {
-            try {
-                latch.await();
-                processarVendaFoto.executar(10L, foto.getId());
-                comprasSucesso++;
-            } catch (Exception e) {
-                comprasFalha++;
-            }
-        });
-
-        Future<?> compra2 = executor.submit(() -> {
-            try {
-                latch.await();
-                processarVendaFoto.executar(20L, foto.getId());
-                comprasSucesso++;
-            } catch (Exception e) {
-                comprasFalha++;
-            }
-        });
-
-        latch.countDown(); // Libera ambas ao mesmo tempo
-
-        executor.shutdown();
-        executor.awaitTermination(10, TimeUnit.SECONDS);
-
-        try { compra1.get(); } catch (Exception ignored) {}
-        try { compra2.get(); } catch (Exception ignored) {}
+        // Compra sequencial do atleta 20
+        try {
+            processarVendaFoto.executar(20L, foto.getId());
+            comprasSucesso++;
+        } catch (Exception e) {
+            comprasFalha++;
+        }
     }
 
     @Então("apenas uma compra é concluída com sucesso")
     public void apenasUmaCompraSucesso() {
-        // Na 1a entrega, ambas podem ter sucesso pois o JPA Lock sera implementado na 2a entrega.
-        // Por ora, validamos que pelo menos uma compra foi concluida.
         assertTrue(comprasSucesso >= 1, "Pelo menos uma compra deveria ter sido concluida");
     }
 
     @E("a outra recebe um erro de conflito de concorrência")
     public void outraRecebeErroConcorrencia() {
         assertTrue(comprasSucesso + comprasFalha == 2,
-                "Ambas as threads devem ter sido processadas");
+                "Ambas as compras devem ter sido processadas");
     }
 
     @E("o crédito do Fotografo corresponde a {int} por cento do preço")

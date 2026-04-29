@@ -11,4 +11,6 @@ public interface SpotRepository {
     Optional<Spot> findById(Long id);
 
     List<Spot> findAll();
+
+    void deleteAll();
 }

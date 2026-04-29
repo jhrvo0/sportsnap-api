@@ -10,4 +10,6 @@ public interface StatusPotencialRepository {
     Optional<StatusPotencial> findById(Long id);
 
     Optional<StatusPotencial> findByAtletaId(Long atletaId);
+
+    void deleteAll();
 }

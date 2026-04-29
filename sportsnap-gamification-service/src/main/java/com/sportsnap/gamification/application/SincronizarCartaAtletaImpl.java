@@ -5,11 +5,10 @@ import com.sportsnap.gamification.domain.entities.Atleta;
 import com.sportsnap.gamification.domain.entities.CartaOficial;
 import com.sportsnap.gamification.domain.entities.StatusPotencial;
 import com.sportsnap.gamification.domain.usecases.SincronizarCartaAtleta;
-import com.sportsnap.gamification.infrastructure.persistence.JpaAtletaRepository;
-import com.sportsnap.gamification.infrastructure.persistence.JpaCartaOficialRepository;
-import com.sportsnap.gamification.infrastructure.persistence.JpaStatusPotencialRepository;
+import com.sportsnap.gamification.domain.repositories.AtletaRepository;
+import com.sportsnap.gamification.domain.repositories.CartaOficialRepository;
+import com.sportsnap.gamification.domain.repositories.StatusPotencialRepository;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,13 +16,13 @@ import java.util.List;
 @Service
 public class SincronizarCartaAtletaImpl implements SincronizarCartaAtleta {
 
-    private final JpaAtletaRepository atletaRepository;
-    private final JpaCartaOficialRepository cartaOficialRepository;
-    private final JpaStatusPotencialRepository statusPotencialRepository;
+    private final AtletaRepository atletaRepository;
+    private final CartaOficialRepository cartaOficialRepository;
+    private final StatusPotencialRepository statusPotencialRepository;
 
-    public SincronizarCartaAtletaImpl(JpaAtletaRepository atletaRepository,
-                                       JpaCartaOficialRepository cartaOficialRepository,
-                                       JpaStatusPotencialRepository statusPotencialRepository) {
+    public SincronizarCartaAtletaImpl(AtletaRepository atletaRepository,
+                                       CartaOficialRepository cartaOficialRepository,
+                                       StatusPotencialRepository statusPotencialRepository) {
         this.atletaRepository = atletaRepository;
         this.cartaOficialRepository = cartaOficialRepository;
         this.statusPotencialRepository = statusPotencialRepository;
@@ -38,7 +37,6 @@ public class SincronizarCartaAtletaImpl implements SincronizarCartaAtleta {
      * Este use case recebe a confirmacao de que a licenca e valida e executa a sincronizacao.
      */
     @Override
-    @Transactional
     public void executar(Long atletaId) {
         Atleta atleta = atletaRepository.findById(atletaId)
                 .orElseThrow(() -> new IllegalArgumentException("Atleta nao encontrado: " + atletaId));

@@ -1,26 +1,13 @@
 package com.sportsnap.gamification.domain.entities;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "status_potencial")
 public class StatusPotencial {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private Double xpAcumulado;
-
-    @Column(nullable = false)
     private Integer streakDeConsistencia;
-
     private LocalDateTime ultimaAtividade;
-
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "atleta_id", nullable = false, unique = true)
     private Atleta atleta;
 
     public StatusPotencial() {}

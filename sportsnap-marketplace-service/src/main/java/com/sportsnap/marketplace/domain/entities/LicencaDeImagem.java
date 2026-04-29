@@ -1,31 +1,15 @@
 package com.sportsnap.marketplace.domain.entities;
 
-import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "licencas_de_imagem")
 public class LicencaDeImagem {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private Long atletaId;
-
-    @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal preco;
-
-    @Column(nullable = false)
     private LocalDateTime adquiridaEm;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "foto_id", nullable = false)
     private Foto foto;
-
-    @OneToOne(mappedBy = "licencaDeImagem", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private SplitFinanceiro splitFinanceiro;
 
     public LicencaDeImagem() {}

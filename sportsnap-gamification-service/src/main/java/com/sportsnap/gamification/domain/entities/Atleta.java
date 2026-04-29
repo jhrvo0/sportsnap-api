@@ -1,29 +1,14 @@
 package com.sportsnap.gamification.domain.entities;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
-@Entity
-@Table(name = "atletas")
 public class Atleta {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private String nome;
-
-    @Column(nullable = false, unique = true)
     private String email;
-
-    @Column(nullable = false)
     private LocalDateTime criadoEm;
-
-    @OneToOne(mappedBy = "atleta", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private CartaOficial cartaOficial;
-
-    @OneToOne(mappedBy = "atleta", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private StatusPotencial statusPotencial;
 
     public Atleta() {}

@@ -5,9 +5,9 @@ import com.sportsnap.gamification.domain.entities.AtributoEsportivo;
 import com.sportsnap.gamification.domain.entities.CartaOficial;
 import com.sportsnap.gamification.domain.entities.StatusPotencial;
 import com.sportsnap.gamification.domain.usecases.SincronizarCartaAtleta;
-import com.sportsnap.gamification.infrastructure.persistence.JpaAtletaRepository;
-import com.sportsnap.gamification.infrastructure.persistence.JpaCartaOficialRepository;
-import com.sportsnap.gamification.infrastructure.persistence.JpaStatusPotencialRepository;
+import com.sportsnap.gamification.domain.repositories.AtletaRepository;
+import com.sportsnap.gamification.domain.repositories.CartaOficialRepository;
+import com.sportsnap.gamification.domain.repositories.StatusPotencialRepository;
 import io.cucumber.java.Before;
 import io.cucumber.java.pt.Dado;
 import io.cucumber.java.pt.Quando;
@@ -20,13 +20,13 @@ import static org.junit.jupiter.api.Assertions.*;
 public class SincronizacaoSteps {
 
     @Autowired
-    private JpaAtletaRepository atletaRepository;
+    private AtletaRepository atletaRepository;
 
     @Autowired
-    private JpaCartaOficialRepository cartaOficialRepository;
+    private CartaOficialRepository cartaOficialRepository;
 
     @Autowired
-    private JpaStatusPotencialRepository statusPotencialRepository;
+    private StatusPotencialRepository statusPotencialRepository;
 
     @Autowired
     private SincronizarCartaAtleta sincronizarCartaAtleta;

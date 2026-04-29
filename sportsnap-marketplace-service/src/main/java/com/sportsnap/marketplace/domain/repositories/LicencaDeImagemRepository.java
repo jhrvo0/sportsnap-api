@@ -13,4 +13,6 @@ public interface LicencaDeImagemRepository {
     List<LicencaDeImagem> findByAtletaId(Long atletaId);
 
     List<LicencaDeImagem> findByFotoId(Long fotoId);
+
+    void deleteAll();
 }

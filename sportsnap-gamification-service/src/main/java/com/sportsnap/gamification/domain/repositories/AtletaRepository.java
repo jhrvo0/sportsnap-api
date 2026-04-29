@@ -15,4 +15,6 @@ public interface AtletaRepository {
     List<Atleta> findAll();
 
     void deleteById(Long id);
+
+    void deleteAll();
 }

@@ -4,119 +4,106 @@ Ecossistema digital que une performance esportiva real a fotografia profissional
 
 ## Arquitetura
 
-O sistema e composto por **3 microservicos** independentes que se comunicam via REST:
+O sistema e composto por **3 modulos** independentes seguindo **Clean Architecture** e **DDD**:
 
 ```
 sportsnap-api/
-├── sportsnap-gamification-service   (porta 8081) — Core Domain
-├── sportsnap-marketplace-service    (porta 8082) — Supporting Domain
-├── sportsnap-session-service        (porta 8083) — Generic Domain
-└── sportsnap-web                    (porta 8080) — Frontend Next.js
+├── sportsnap-gamification-service   — Core Domain
+├── sportsnap-marketplace-service    — Supporting Domain
+├── sportsnap-session-service        — Generic Domain
+└── docs/                            — Documentacao do projeto
 ```
 
-| Servico | Responsabilidade |
+| Modulo | Responsabilidade |
 |---|---|
 | **Gamification** | Shadow Stats, Reveal/Sincronizacao, Ranking, Calculo de Overall |
 | **Marketplace** | Fotos, Licencas de Imagem, Split Financeiro, Upload em Lote |
 | **Session** | Spots, Sessoes, Check-ins, Registros de Atividade, Motor de Match |
 
-Cada servico possui seu proprio banco PostgreSQL, garantindo isolamento de dados.
+## 1a Entrega — Foco no Dominio e BDD
+
+Esta entrega foca na **modelagem do dominio puro** com validacao via **testes BDD (Cucumber)**. Nao ha dependencia de banco de dados, UI ou infraestrutura externa.
+
+### Escopo
+
+- **8 funcionalidades nao triviais** (2 por integrante), cobrindo todas as User Stories (US01-US08)
+- Regras de negocio blindadas na camada de Dominio
+- Repositorios in-memory para isolamento total dos testes
+- Linguagem Onipresente aplicada em todo o codigo e documentacao
+
+### Funcionalidades por Integrante
+
+| Integrante | Funcionalidades |
+|---|---|
+| **Antonio** | US01 (Check-in Georreferenciado) + US02 (Registro e Calculo de Atividade) |
+| **Galileu** | US03 (Upload e Extracao EXIF em Lote) + US04 (Dashboard de Controle e Conversao) |
+| **Marco** | US05 (Comprar Licenca com Split Financeiro) + US06 (Motor de Match Automatico) |
+| **jhrvo0** | US07 (Sincronizar Carta / Reveal) + US08 (Calculo de Overall Dinamico) |
 
 ## Stack Tecnologica
 
 | Camada | Tecnologia |
 |---|---|
-| Backend | Java 21 + Spring Boot 3.4.4 |
-| Frontend | Next.js 14 + Tailwind CSS + TypeScript |
-| Persistencia | JPA / Hibernate + PostgreSQL 16 |
+| Linguagem | Java 21 |
+| Framework | Spring Boot 3.4.4 |
 | Testes BDD | Cucumber 7.20 + JUnit 5 |
-| Build | Maven (backend) + npm (frontend) |
-| Containerizacao | Docker + Docker Compose |
+| Build | Maven (wrapper incluido) |
 | Arquitetura | Clean Architecture + DDD |
 
 ## Pre-requisitos
 
 - **Java 21** (JDK)
 - **Maven 3.9+** (ou use o wrapper `./mvnw`)
-- **Node.js 20+** e **npm** (para o frontend)
-- **Docker** e **Docker Compose**
 
-## Como Executar
-
-### Com Docker (recomendado)
+## Como Executar os Testes
 
 ```bash
-# 1. Compilar os JARs
-./mvnw clean package -DskipTests
-
-# 2. Subir todos os servicos + bancos de dados + frontend
-docker compose up --build
-
-# 3. Subir apenas um servico especifico
-docker compose up gamification-service
-```
-
-### Sem Docker (desenvolvimento local)
-
-Voce precisa de um PostgreSQL rodando localmente. Configure as variaveis de ambiente ou edite os `application.yml`.
-
-```bash
-# Compilar todos os modulos
-./mvnw clean compile
-
-# Rodar um servico especifico
-cd sportsnap-gamification-service
-../mvnw spring-boot:run
-```
-
-### Portas dos Servicos
-
-| Servico | Porta App | Porta DB (host) |
-|---|---|---|
-| **Web (Frontend)** | **8080** | — |
-| Gamification | 8081 | 5433 |
-| Marketplace | 8082 | 5434 |
-| Session | 8083 | 5435 |
-
-## Testes
-
-```bash
-# Rodar todos os testes
-./mvnw test
+# Rodar todos os testes (BDD + unitarios)
+./mvnw clean test
 
 # Rodar apenas testes BDD (Cucumber)
 ./mvnw test -Pcucumber
 
-# Rodar testes de um servico especifico
+# Rodar testes de um modulo especifico
 ./mvnw test -pl sportsnap-gamification-service
+./mvnw test -pl sportsnap-session-service
+./mvnw test -pl sportsnap-marketplace-service
 ```
 
 ## Estrutura de Pacotes (Clean Architecture)
 
-Cada servico segue a mesma estrutura:
+Cada modulo segue a mesma estrutura:
 
 ```
 com.sportsnap.<servico>/
 ├── domain/
-│   ├── entities/          # Entidades JPA (Atleta, Foto, Session...)
-│   ├── usecases/          # Interfaces de casos de uso
-│   └── repositories/      # Interfaces (ports) — sem Spring
-├── infrastructure/
-│   ├── persistence/       # Implementacoes JPA (adapters)
-│   ├── web/               # Controllers REST
-│   └── messaging/         # Comunicacao entre servicos
-└── application/           # DTOs, mappers, configuracoes
+│   ├── entities/          # Entidades puras (POJOs) da Linguagem Onipresente
+│   ├── usecases/          # Interfaces dos casos de uso
+│   └── repositories/      # Interfaces (ports) dos repositorios
+└── application/           # Implementacoes dos use cases e repositorios in-memory
 ```
 
-## Variaveis de Ambiente
+## Cenarios BDD (Cucumber)
 
-| Variavel | Descricao | Default |
+Cada funcionalidade possui um arquivo `.feature` em portugues com cenarios que validam as regras de negocio:
+
+| Modulo | Feature | User Story |
 |---|---|---|
-| `DB_HOST` | Host do banco PostgreSQL | `localhost` |
-| `DB_PORT` | Porta do banco | `5432` |
-| `DB_NAME` | Nome do banco | `sportsnap_<servico>` |
-| `DB_USER` | Usuario do banco | `sportsnap` |
-| `DB_PASS` | Senha do banco | `sportsnap` |
+| Session | `checkin.feature` | US01 — Check-in Georreferenciado |
+| Session | `registro-atividade.feature` | US02 — Registro de Atividade |
+| Marketplace | `upload-lote.feature` | US03 — Upload em Lote |
+| Marketplace | `dashboard-fotografo.feature` | US04 — Dashboard do Fotografo |
+| Marketplace | `venda-foto.feature` | US05 — Compra de Licenca |
+| Session | `match-automatico.feature` | US06 — Motor de Match |
+| Gamification | `sincronizacao.feature` | US07 — Sincronizacao/Reveal |
+| Gamification | `calculo-overall.feature` | US08 — Calculo de Overall |
+
+## Documentacao
+
+- [`docs/dominio.md`](docs/dominio.md) — Descricao do dominio, linguagem onipresente, regras de negocio, niveis DDD
+- [`docs/user-story-map.md`](docs/user-story-map.md) — User Story Map com detalhamento de US01-US08
+- [`docs/prototipos.md`](docs/prototipos.md) — Prototipos de baixa e alta fidelidade
+- [`docs/sportsnap.cml`](docs/sportsnap.cml) — Modelo Context Mapper (DDD)
 
 ## Equipe
 
@@ -125,5 +112,5 @@ com.sportsnap.<servico>/
 - **Marco Maciel** — [@oMarcoMaciel](https://github.com/oMarcoMaciel)
 - **jhrvo0** — [@jhrvo0](https://github.com/jhrvo0)
 
-**Disciplina:** Engenharia de Requisitos + Computacao Concorrente, Paralela e Distribuida  
+**Disciplina:** Engenharia de Requisitos  
 **Instituicao:** CESAR School

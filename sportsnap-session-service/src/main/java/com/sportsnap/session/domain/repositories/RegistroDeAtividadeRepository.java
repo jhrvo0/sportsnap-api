@@ -11,4 +11,6 @@ public interface RegistroDeAtividadeRepository {
     Optional<RegistroDeAtividade> findById(Long id);
 
     List<RegistroDeAtividade> findByCheckInId(Long checkInId);
+
+    void deleteAll();
 }

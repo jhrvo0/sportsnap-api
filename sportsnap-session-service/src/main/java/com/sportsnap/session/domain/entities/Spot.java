@@ -1,25 +1,11 @@
 package com.sportsnap.session.domain.entities;
 
-import jakarta.persistence.*;
-
-@Entity
-@Table(name = "spots")
 public class Spot {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(nullable = false)
     private String nome;
-
-    @Column(nullable = false)
     private Double latitude;
-
-    @Column(nullable = false)
     private Double longitude;
-
-    @Column(columnDefinition = "TEXT")
     private String descricao;
 
     public Spot() {}

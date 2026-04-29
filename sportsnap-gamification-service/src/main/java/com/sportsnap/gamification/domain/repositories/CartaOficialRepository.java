@@ -13,4 +13,6 @@ public interface CartaOficialRepository {
     Optional<CartaOficial> findByAtletaId(Long atletaId);
 
     List<CartaOficial> findAllByOrderByOverallDesc();
+
+    void deleteAll();
 }
