@@ -3,7 +3,6 @@ package com.sportsnap.marketplace.infraestrutura.memoria;
 import com.sportsnap.marketplace.dominio.fotografo.Fotografo;
 import com.sportsnap.marketplace.dominio.fotografo.FotografoId;
 import com.sportsnap.marketplace.dominio.fotografo.FotografoRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class FotografoRepositorioMemoria implements FotografoRepositorio {
 
     private final Map<Integer, Fotografo> armazem = new ConcurrentHashMap<>();

@@ -5,7 +5,6 @@ import com.sportsnap.marketplace.dominio.foto.FotoId;
 import com.sportsnap.marketplace.dominio.licenca.LicencaDeImagem;
 import com.sportsnap.marketplace.dominio.licenca.LicencaId;
 import com.sportsnap.marketplace.dominio.licenca.LicencaRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class LicencaRepositorioMemoria implements LicencaRepositorio {
 
     private final Map<Integer, LicencaDeImagem> armazem = new ConcurrentHashMap<>();

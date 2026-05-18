@@ -4,7 +4,6 @@ import com.sportsnap.marketplace.dominio.fotografo.FotografoId;
 import com.sportsnap.marketplace.dominio.lote.Lote;
 import com.sportsnap.marketplace.dominio.lote.LoteId;
 import com.sportsnap.marketplace.dominio.lote.LoteRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class LoteRepositorioMemoria implements LoteRepositorio {
 
     private final Map<Integer, Lote> armazem = new ConcurrentHashMap<>();

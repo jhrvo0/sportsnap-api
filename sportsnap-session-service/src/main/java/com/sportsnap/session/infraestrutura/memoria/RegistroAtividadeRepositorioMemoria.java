@@ -4,7 +4,6 @@ import com.sportsnap.session.dominio.atividade.RegistroAtividade;
 import com.sportsnap.session.dominio.atividade.RegistroAtividadeId;
 import com.sportsnap.session.dominio.atividade.RegistroAtividadeRepositorio;
 import com.sportsnap.session.dominio.checkin.CheckInId;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
@@ -13,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class RegistroAtividadeRepositorioMemoria implements RegistroAtividadeRepositorio {
 
     private final Map<Integer, RegistroAtividade> armazem = new ConcurrentHashMap<>();

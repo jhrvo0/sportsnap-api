@@ -3,13 +3,12 @@ package com.sportsnap.gamification.infraestrutura.memoria;
 import com.sportsnap.gamification.dominio.atleta.AtletaId;
 import com.sportsnap.gamification.dominio.potencial.StatusPotencial;
 import com.sportsnap.gamification.dominio.potencial.StatusPotencialRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class StatusPotencialRepositorioMemoria implements StatusPotencialRepositorio {
 
     private final Map<Integer, StatusPotencial> armazem = new ConcurrentHashMap<>();

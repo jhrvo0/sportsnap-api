@@ -4,7 +4,6 @@ import com.sportsnap.session.dominio.sessao.Sessao;
 import com.sportsnap.session.dominio.sessao.SessaoId;
 import com.sportsnap.session.dominio.sessao.SessaoRepositorio;
 import com.sportsnap.session.dominio.spot.SpotId;
-import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -14,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class SessaoRepositorioMemoria implements SessaoRepositorio {
 
     private final Map<Integer, Sessao> armazem = new ConcurrentHashMap<>();

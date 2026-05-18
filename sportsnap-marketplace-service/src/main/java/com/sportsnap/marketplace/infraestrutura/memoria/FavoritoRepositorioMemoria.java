@@ -3,7 +3,6 @@ package com.sportsnap.marketplace.infraestrutura.memoria;
 import com.sportsnap.marketplace.dominio.atleta.AtletaId;
 import com.sportsnap.marketplace.dominio.foto.FotoId;
 import com.sportsnap.marketplace.dominio.sugestao.FavoritoRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.util.HashSet;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class FavoritoRepositorioMemoria implements FavoritoRepositorio {
 
     private final Map<Integer, Set<Integer>> armazem = new ConcurrentHashMap<>();

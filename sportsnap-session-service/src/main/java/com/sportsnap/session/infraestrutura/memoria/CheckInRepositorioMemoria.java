@@ -5,7 +5,6 @@ import com.sportsnap.session.dominio.checkin.CheckIn;
 import com.sportsnap.session.dominio.checkin.CheckInId;
 import com.sportsnap.session.dominio.checkin.CheckInRepositorio;
 import com.sportsnap.session.dominio.sessao.SessaoId;
-import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
@@ -14,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class CheckInRepositorioMemoria implements CheckInRepositorio {
 
     private final Map<Integer, CheckIn> armazem = new ConcurrentHashMap<>();

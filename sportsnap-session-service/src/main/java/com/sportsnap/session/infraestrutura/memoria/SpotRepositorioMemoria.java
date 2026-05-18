@@ -3,7 +3,6 @@ package com.sportsnap.session.infraestrutura.memoria;
 import com.sportsnap.session.dominio.spot.Spot;
 import com.sportsnap.session.dominio.spot.SpotId;
 import com.sportsnap.session.dominio.spot.SpotRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class SpotRepositorioMemoria implements SpotRepositorio {
 
     private final Map<Integer, Spot> armazem = new ConcurrentHashMap<>();

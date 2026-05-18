@@ -1,5 +1,9 @@
 package com.sportsnap.marketplace;
 
+import com.sportsnap.marketplace.aplicacao.foto.FotoRepositorioAplicacao;
+import com.sportsnap.marketplace.aplicacao.foto.FotoServicoAplicacao;
+import com.sportsnap.marketplace.aplicacao.fotografo.FotografoRepositorioAplicacao;
+import com.sportsnap.marketplace.aplicacao.fotografo.FotografoServicoAplicacao;
 import com.sportsnap.marketplace.dominio.dashboard.DashboardServico;
 import com.sportsnap.marketplace.dominio.evento.EventoBarramento;
 import com.sportsnap.marketplace.dominio.foto.FotoRepositorio;
@@ -15,14 +19,9 @@ import com.sportsnap.marketplace.dominio.sugestao.FavoritoRepositorio;
 import com.sportsnap.marketplace.dominio.sugestao.MotorSugestaoServico;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
-import org.springframework.boot.autoconfigure.orm.jpa.HibernateJpaAutoConfiguration;
 import org.springframework.context.annotation.Bean;
 
-@SpringBootApplication(exclude = {
-        DataSourceAutoConfiguration.class,
-        HibernateJpaAutoConfiguration.class
-})
+@SpringBootApplication
 public class MarketplaceApplication {
 
     public static void main(String[] args) {
@@ -32,6 +31,11 @@ public class MarketplaceApplication {
     @Bean
     public FotografoServico fotografoServico(FotografoRepositorio repositorio) {
         return new FotografoServico(repositorio);
+    }
+
+    @Bean
+    public FotografoServicoAplicacao fotografoServicoAplicacao(FotografoRepositorioAplicacao repositorio) {
+        return new FotografoServicoAplicacao(repositorio);
     }
 
     @Bean
@@ -45,27 +49,32 @@ public class MarketplaceApplication {
     }
 
     @Bean
+    public FotoServicoAplicacao fotoServicoAplicacao(FotoRepositorioAplicacao repositorio) {
+        return new FotoServicoAplicacao(repositorio);
+    }
+
+    @Bean
     public VendaServico vendaServico(LicencaRepositorio licencaRepositorio,
-                                       SplitRepositorio splitRepositorio,
-                                       FotoRepositorio fotoRepositorio,
-                                       EventoBarramento barramento) {
+                                      SplitRepositorio splitRepositorio,
+                                      FotoRepositorio fotoRepositorio,
+                                      EventoBarramento barramento) {
         return new VendaServico(licencaRepositorio, splitRepositorio, fotoRepositorio, barramento);
     }
 
     @Bean
     public DashboardServico dashboardServico(FotografoRepositorio fotografoRepositorio,
-                                                LoteRepositorio loteRepositorio,
-                                                FotoRepositorio fotoRepositorio,
-                                                LicencaRepositorio licencaRepositorio,
-                                                SplitRepositorio splitRepositorio) {
+                                              LoteRepositorio loteRepositorio,
+                                              FotoRepositorio fotoRepositorio,
+                                              LicencaRepositorio licencaRepositorio,
+                                              SplitRepositorio splitRepositorio) {
         return new DashboardServico(fotografoRepositorio, loteRepositorio, fotoRepositorio,
-                                      licencaRepositorio, splitRepositorio);
+                                    licencaRepositorio, splitRepositorio);
     }
 
     @Bean
     public MotorSugestaoServico motorSugestaoServico(FotoRepositorio fotoRepositorio,
-                                                       LicencaRepositorio licencaRepositorio,
-                                                       FavoritoRepositorio favoritoRepositorio) {
+                                                      LicencaRepositorio licencaRepositorio,
+                                                      FavoritoRepositorio favoritoRepositorio) {
         return new MotorSugestaoServico(fotoRepositorio, licencaRepositorio, favoritoRepositorio);
     }
 }

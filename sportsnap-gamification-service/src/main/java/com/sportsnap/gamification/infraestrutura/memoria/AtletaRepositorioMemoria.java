@@ -3,7 +3,6 @@ package com.sportsnap.gamification.infraestrutura.memoria;
 import com.sportsnap.gamification.dominio.atleta.Atleta;
 import com.sportsnap.gamification.dominio.atleta.AtletaId;
 import com.sportsnap.gamification.dominio.atleta.AtletaRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class AtletaRepositorioMemoria implements AtletaRepositorio {
 
     private final Map<Integer, Atleta> armazem = new ConcurrentHashMap<>();

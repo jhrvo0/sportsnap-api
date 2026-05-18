@@ -3,7 +3,6 @@ package com.sportsnap.gamification.infraestrutura.memoria;
 import com.sportsnap.gamification.dominio.atleta.AtletaId;
 import com.sportsnap.gamification.dominio.sincronizacao.Licenca;
 import com.sportsnap.gamification.dominio.sincronizacao.LicencaRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -11,7 +10,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class LicencaRepositorioMemoria implements LicencaRepositorio {
 
     private final List<Licenca> armazem = new CopyOnWriteArrayList<>();

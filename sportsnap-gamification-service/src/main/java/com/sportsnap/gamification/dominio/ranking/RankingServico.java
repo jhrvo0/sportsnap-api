@@ -65,4 +65,8 @@ public class RankingServico {
         resultado.add(b);
         return resultado;
     }
+
+    public RankingIterador criarIterador() {
+        return new CartaRankingIterador(consultarGlobal());
+    }
 }

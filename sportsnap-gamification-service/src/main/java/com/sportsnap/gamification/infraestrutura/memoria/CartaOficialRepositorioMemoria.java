@@ -3,7 +3,6 @@ package com.sportsnap.gamification.infraestrutura.memoria;
 import com.sportsnap.gamification.dominio.atleta.AtletaId;
 import com.sportsnap.gamification.dominio.carta.CartaOficial;
 import com.sportsnap.gamification.dominio.carta.CartaOficialRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.util.Comparator;
 import java.util.List;
@@ -12,7 +11,7 @@ import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class CartaOficialRepositorioMemoria implements CartaOficialRepositorio {
 
     private final Map<Integer, CartaOficial> porAtleta = new ConcurrentHashMap<>();

@@ -3,7 +3,6 @@ package com.sportsnap.marketplace.infraestrutura.memoria;
 import com.sportsnap.marketplace.dominio.licenca.LicencaId;
 import com.sportsnap.marketplace.dominio.licenca.SplitFinanceiro;
 import com.sportsnap.marketplace.dominio.licenca.SplitRepositorio;
-import org.springframework.stereotype.Repository;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-@Repository
+// @Repository (desativado: usando JPA)
 public class SplitRepositorioMemoria implements SplitRepositorio {
 
     private final Map<Integer, SplitFinanceiro> armazem = new ConcurrentHashMap<>();
