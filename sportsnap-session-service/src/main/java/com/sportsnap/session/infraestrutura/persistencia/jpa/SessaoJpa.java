@@ -43,6 +43,7 @@ interface SessaoJpaRepository extends JpaRepository<SessaoJpa, Integer> {
     List<SessaoJpa> findBySpotId(int spotId);
     List<SessaoJpa> findByCanceladaFalse();
     List<SessaoResumo> findSessaoResumoBy();
+    java.util.Optional<SessaoResumo> findSessaoResumoById(int id);
 }
 
 @Repository
@@ -97,5 +98,11 @@ class SessaoRepositorioImpl implements SessaoRepositorio, SessaoRepositorioAplic
     @Override
     public List<SessaoResumo> pesquisarResumos() {
         return repositorio.findSessaoResumoBy();
+    }
+
+    @Override
+    public SessaoResumo buscarResumo(SessaoId id) {
+        return repositorio.findSessaoResumoById(id.getId())
+            .orElseThrow(() -> new IllegalArgumentException("Sessao nao encontrada: " + id));
     }
 }

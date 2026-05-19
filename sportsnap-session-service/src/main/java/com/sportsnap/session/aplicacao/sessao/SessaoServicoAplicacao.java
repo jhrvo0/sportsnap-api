@@ -1,5 +1,7 @@
 package com.sportsnap.session.aplicacao.sessao;
 
+import com.sportsnap.session.dominio.sessao.SessaoId;
+
 import java.util.List;
 
 public class SessaoServicoAplicacao {
@@ -12,5 +14,9 @@ public class SessaoServicoAplicacao {
 
     public List<SessaoResumo> pesquisarResumos() {
         return repositorio.pesquisarResumos();
+    }
+
+    public SessaoResumo buscarResumo(SessaoId id) {
+        return repositorio.buscarResumo(id);
     }
 }
