@@ -9,11 +9,15 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.LockModeType;
 import jakarta.persistence.Table;
 import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.sportsnap.marketplace.dominio.atleta.AtletaId;
@@ -41,6 +45,10 @@ class LicencaDeImagemJpa {
 interface LicencaDeImagemJpaRepository extends JpaRepository<LicencaDeImagemJpa, Integer> {
     List<LicencaDeImagemJpa> findByAtletaId(int atletaId);
     List<LicencaDeImagemJpa> findByFotoId(int fotoId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT l FROM LicencaDeImagemJpa l WHERE l.fotoId = :fotoId")
+    List<LicencaDeImagemJpa> findByFotoIdWithLock(@Param("fotoId") int fotoId);
 }
 
 @Repository
