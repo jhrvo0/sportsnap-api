@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,6 +36,9 @@ class CheckInJpa {
     double longitude;
     boolean cancelado;
     boolean atividadeRegistrada;
+
+    @Version
+    int versao;
 }
 
 interface CheckInJpaRepository extends JpaRepository<CheckInJpa, Integer> {

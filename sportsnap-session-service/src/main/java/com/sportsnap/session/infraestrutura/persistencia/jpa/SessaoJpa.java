@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import jakarta.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -33,6 +34,9 @@ class SessaoJpa {
     LocalDateTime periodoFim;
     String descricao;
     boolean cancelada;
+
+    @Version
+    int versao;
 }
 
 interface SessaoJpaRepository extends JpaRepository<SessaoJpa, Integer> {
