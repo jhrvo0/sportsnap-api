@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -18,12 +19,14 @@ import com.sportsnap.marketplace.dominio.lote.LoteId;
 import com.sportsnap.marketplace.dominio.lote.LoteServico;
 import com.sportsnap.marketplace.dominio.lote.SessaoId;
 import com.sportsnap.marketplace.dominio.lote.SpotId;
+import com.sportsnap.marketplace.infraestrutura.cliente.SessionCliente;
 
 @RestController
 @RequestMapping("/api/lotes")
 public class LoteControlador {
 
     @Autowired private LoteServico loteServico;
+    @Autowired private SessionCliente sessionCliente;
 
     @GetMapping
     public List<LoteDto> listar(@RequestParam(required = false) Integer fotografoId) {
@@ -36,14 +39,17 @@ public class LoteControlador {
     }
 
     @PostMapping
-    public LoteDto criar(@RequestBody LoteCreateDto dto) {
+    public ResponseEntity<?> criar(@RequestBody LoteCreateDto dto) {
+        if (!sessionCliente.sessaoExiste(dto.sessaoId)) {
+            return ResponseEntity.badRequest().body("Sessao nao encontrada: " + dto.sessaoId);
+        }
         var lote = loteServico.cadastrar(
             new FotografoId(dto.fotografoId),
             new SessaoId(dto.sessaoId),
             new SpotId(dto.spotId),
             dto.descricao
         );
-        return toDto(lote);
+        return ResponseEntity.ok(toDto(lote));
     }
 
     @PostMapping("/{id}/arquivar")

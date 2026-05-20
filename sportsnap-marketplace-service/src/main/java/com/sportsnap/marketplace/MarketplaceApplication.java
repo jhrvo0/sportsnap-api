@@ -24,6 +24,8 @@ import org.springframework.context.annotation.Bean;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.springframework.web.client.RestTemplate;
+
 @SpringBootApplication
 public class MarketplaceApplication {
 
@@ -67,6 +69,11 @@ public class MarketplaceApplication {
     @Bean
     public ExecutorService dashboardExecutor() {
         return Executors.newFixedThreadPool(4);
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 
     @Bean
