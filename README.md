@@ -112,6 +112,37 @@ Cada historia possui um arquivo `.feature` em portugues com multiplos cenarios (
 - [`docs/user-story-map.md`](docs/user-story-map.md) — Mapa das 8 historias completas (H01-H08) com operacoes detalhadas
 - [`docs/prototipos.md`](docs/prototipos.md) — Prototipos de baixa e alta fidelidade
 - [`docs/sportsnap.cml`](docs/sportsnap.cml) — Modelo Context Mapper (DDD)
+- [`docs/arquitetura-distribuida.md`](docs/arquitetura-distribuida.md) — Diagrama da arquitetura distribuida, comunicacao REST e controle de concorrencia
+- [`docs/relatorio-desempenho.md`](docs/relatorio-desempenho.md) — Relatorio comparativo sequencial vs paralelo
+
+## Execucao com Docker
+
+### Pre-requisitos
+- Docker e Docker Compose instalados
+- Java 17 e Maven 3.9+
+
+### Passos
+
+```bash
+# 1. Compilar todos os servicos (gera os JARs)
+mvn package -DskipTests
+
+# 2. Subir o ambiente completo
+docker-compose up --build
+
+# 3. Verificar os servicos
+curl http://localhost:8083/api/sessoes       # Session Service
+curl http://localhost:8082/api/benchmark/dashboard  # Marketplace + Benchmark
+curl http://localhost:8081/api/atletas       # Gamification Service
+```
+
+### Endpoints de Concorrencia
+
+| Servico | Endpoint | Descricao |
+|---|---|---|
+| session | `POST /api/sessoes/checkins/lote` | Check-ins em lote com ExecutorService |
+| marketplace | `GET /api/benchmark/dashboard` | Benchmark sequencial vs paralelo |
+| gamification | `POST /api/ranking/calcular-concorrente` | Ranking concorrente com ExecutorService |
 
 ## Equipe
 
