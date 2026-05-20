@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  session-service:
+    build:
+      context: ./sportsnap-session-service
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - SPORTSNAP_SERVICES_GAMIFICATION_URL=http://gamification-service:8081
+    networks:
+      - sportsnap-net
+
+  marketplace-service:
+    build:
+      context: ./sportsnap-marketplace-service
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - SPORTSNAP_SERVICES_SESSION_URL=http://session-service:8083
+    networks:
+      - sportsnap-net
+    depends_on:
+      - session-service
+
+  gamification-service:
+    build:
+      context: ./sportsnap-gamification-service
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    networks:
+      - sportsnap-net
+
+networks:
+  sportsnap-net:
+    driver: bridge
