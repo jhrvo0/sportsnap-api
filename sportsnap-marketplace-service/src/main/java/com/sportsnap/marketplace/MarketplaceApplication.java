@@ -21,6 +21,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @SpringBootApplication
 public class MarketplaceApplication {
 
@@ -62,13 +65,19 @@ public class MarketplaceApplication {
     }
 
     @Bean
+    public ExecutorService dashboardExecutor() {
+        return Executors.newFixedThreadPool(4);
+    }
+
+    @Bean
     public DashboardServico dashboardServico(FotografoRepositorio fotografoRepositorio,
                                               LoteRepositorio loteRepositorio,
                                               FotoRepositorio fotoRepositorio,
                                               LicencaRepositorio licencaRepositorio,
-                                              SplitRepositorio splitRepositorio) {
+                                              SplitRepositorio splitRepositorio,
+                                              ExecutorService dashboardExecutor) {
         return new DashboardServico(fotografoRepositorio, loteRepositorio, fotoRepositorio,
-                                    licencaRepositorio, splitRepositorio);
+                                    licencaRepositorio, splitRepositorio, dashboardExecutor);
     }
 
     @Bean
