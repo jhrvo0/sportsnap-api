@@ -43,8 +43,16 @@ public class AtletaControlador {
         sincronizacaoServico.sincronizar(new AtletaId(id));
     }
 
+    @PostMapping("/{id}/checkin-registrado")
+    public void registrarCheckIn(@PathVariable int id, @RequestBody CheckInNotificacaoDto dto) {
+        // Recebe notificacao de check-in do session-service para futura acumulacao de XP
+        System.out.println("Check-in registrado: atleta=" + id + ", sessao=" + dto.sessaoId());
+    }
+
     public static class AtletaDto {
         public String nome;
         public String email;
     }
+
+    public record CheckInNotificacaoDto(int sessaoId) {}
 }

@@ -22,6 +22,8 @@ import org.springframework.context.event.SimpleApplicationEventMulticaster;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+import org.springframework.web.client.RestTemplate;
+
 @SpringBootApplication
 public class SessionServiceApplication {
 
@@ -71,6 +73,11 @@ public class SessionServiceApplication {
     @Bean
     public ExecutorService checkInExecutor() {
         return Executors.newFixedThreadPool(10);
+    }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
     }
 
     @Bean

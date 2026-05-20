@@ -4,3 +4,7 @@ spring:
 
 server:
   port: 8083
+
+sportsnap:
+  services:
+    gamification-url: http://localhost:8081

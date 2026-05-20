@@ -20,6 +20,7 @@ import com.sportsnap.session.dominio.sessao.Periodo;
 import com.sportsnap.session.dominio.sessao.SessaoId;
 import com.sportsnap.session.dominio.sessao.SessaoServico;
 import com.sportsnap.session.dominio.spot.SpotId;
+import com.sportsnap.session.infraestrutura.cliente.GamificationCliente;
 
 @RestController
 @RequestMapping("/api/sessoes")
@@ -28,6 +29,7 @@ public class SessaoControlador {
     @Autowired private SessaoServico sessaoServico;
     @Autowired private SessaoServicoAplicacao sessaoServicoAplicacao;
     @Autowired private CheckInLoteServicoAplicacao checkInLoteServico;
+    @Autowired private GamificationCliente gamificationCliente;
 
     @GetMapping
     public List<SessaoResumo> listar() {
@@ -47,7 +49,11 @@ public class SessaoControlador {
 
     @PostMapping("/checkins/lote")
     public List<CheckInResultado> realizarCheckInsEmLote(@RequestBody List<CheckInRequest> requests) {
-        return checkInLoteServico.realizarEmLote(requests);
+        var resultados = checkInLoteServico.realizarEmLote(requests);
+        resultados.stream()
+            .filter(CheckInResultado::sucesso)
+            .forEach(r -> gamificationCliente.notificarCheckIn(r.atletaId(), r.checkInId()));
+        return resultados;
     }
 
     public static class SessaoDto {
