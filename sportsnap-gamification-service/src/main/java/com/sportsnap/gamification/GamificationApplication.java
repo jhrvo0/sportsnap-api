@@ -19,6 +19,9 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 @SpringBootApplication
 public class GamificationApplication {
 
@@ -67,5 +70,10 @@ public class GamificationApplication {
     @Bean
     public EstrategiaXpMusculacao estrategiaXpMusculacao() {
         return new EstrategiaXpMusculacao();
+    }
+
+    @Bean
+    public ExecutorService rankingExecutor() {
+        return Executors.newFixedThreadPool(6);
     }
 }

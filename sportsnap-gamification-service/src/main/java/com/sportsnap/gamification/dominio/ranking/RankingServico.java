@@ -10,6 +10,9 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 public class RankingServico {
 
@@ -69,4 +72,30 @@ public class RankingServico {
     public RankingIterador criarIterador() {
         return new CartaRankingIterador(consultarGlobal());
     }
+
+    public List<EntradaRanking> calcularRankingConcorrente(List<AtletaId> atletas, ExecutorService executor) {
+        // ConcurrentHashMap é thread-safe — região crítica gerenciada internamente
+        ConcurrentHashMap<AtletaId, Double> resultados = new ConcurrentHashMap<>();
+
+        List<Future<?>> tarefas = atletas.stream()
+            .map(atletaId -> executor.submit(() -> {
+                try {
+                    resultados.put(atletaId, calcularOverall(atletaId));
+                } catch (Exception e) {
+                    resultados.put(atletaId, 0.0);
+                }
+            }))
+            .toList();
+
+        for (Future<?> tarefa : tarefas) {
+            try { tarefa.get(); } catch (Exception ignored) {}
+        }
+
+        return resultados.entrySet().stream()
+            .sorted((a, b) -> Double.compare(b.getValue(), a.getValue()))
+            .map(e -> new EntradaRanking(e.getKey().getId(), e.getValue()))
+            .toList();
+    }
+
+    public record EntradaRanking(int atletaId, double overall) {}
 }
