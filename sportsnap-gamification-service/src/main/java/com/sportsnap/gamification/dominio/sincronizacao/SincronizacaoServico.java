@@ -45,7 +45,7 @@ public class SincronizacaoServico {
             return false;
         }
         var ultimaSync = carta.get().getUltimaSincronizacao();
-        var instante = ultimaSync != null ? ultimaSync : LocalDateTime.MIN;
+        var instante = ultimaSync != null ? ultimaSync : LocalDateTime.of(1970, 1, 1, 0, 0);
         return licencaRepositorio.existeLicencaPosterior(atletaId, instante);
     }
 
@@ -69,7 +69,7 @@ public class SincronizacaoServico {
         }
 
         var ultimaSync = carta.getUltimaSincronizacao();
-        var instanteReferencia = ultimaSync != null ? ultimaSync : LocalDateTime.MIN;
+        var instanteReferencia = ultimaSync != null ? ultimaSync : LocalDateTime.of(1970, 1, 1, 0, 0);
         if (!licencaRepositorio.existeLicencaPosterior(atletaId, instanteReferencia)) {
             throw new IllegalStateException("RN01: sincronizacao requer licenca posterior a ultima Reveal");
         }
