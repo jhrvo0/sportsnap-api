@@ -77,15 +77,16 @@ public class RankingServico {
         // ConcurrentHashMap é thread-safe — região crítica gerenciada internamente
         ConcurrentHashMap<AtletaId, Double> resultados = new ConcurrentHashMap<>();
 
-        List<Future<?>> tarefas = atletas.stream()
-            .map(atletaId -> executor.submit(() -> {
+        List<Future<?>> tarefas = new ArrayList<>();
+        for (AtletaId atletaId : atletas) {
+            tarefas.add(executor.submit(() -> {
                 try {
                     resultados.put(atletaId, calcularOverall(atletaId));
                 } catch (Exception e) {
                     resultados.put(atletaId, 0.0);
                 }
-            }))
-            .toList();
+            }));
+        }
 
         for (Future<?> tarefa : tarefas) {
             try { tarefa.get(); } catch (Exception ignored) {}
