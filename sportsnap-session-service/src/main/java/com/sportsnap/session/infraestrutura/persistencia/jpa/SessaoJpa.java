@@ -27,7 +27,7 @@ import com.sportsnap.session.dominio.spot.SpotId;
 class SessaoJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int id;
+    Integer id;
     int spotId;
     LocalDateTime periodoInicio;
     LocalDateTime periodoFim;

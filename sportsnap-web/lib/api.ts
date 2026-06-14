@@ -1,28 +1,3 @@
-export const GAMIFICATION_BASE = "http://localhost:8081";
-export const MARKETPLACE_BASE = "http://localhost:8082";
-export const SESSION_BASE = "http://localhost:8083";
-
-async function request<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    cache: "no-store",
-    headers: { "Content-Type": "application/json" },
-    ...init,
-  });
-  if (!res.ok) {
-    const text = await res.text().catch(() => "");
-    throw new Error(text || `${res.status} ${res.statusText}`);
-  }
-  if (res.status === 204) return undefined as T;
-  const text = await res.text();
-  return text ? (JSON.parse(text) as T) : (undefined as T);
-}
-
-export const api = {
-  get: <T>(url: string) => request<T>(url),
-  post: <T>(url: string, body: unknown) =>
-    request<T>(url, { method: "POST", body: JSON.stringify(body) }),
-};
-
 export type Atleta = { id: number; nome: string; email: string };
 export type CartaResumo = {
   atletaId: number;
@@ -37,6 +12,7 @@ export type Sessao = {
   periodoInicio: string;
   periodoFim: string;
   descricao: string;
+  cancelada?: boolean;
 };
 export type Fotografo = { id: number; nome: string; email: string };
 export type Lote = {

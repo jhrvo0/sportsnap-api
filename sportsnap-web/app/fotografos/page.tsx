@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, MARKETPLACE_BASE, type Fotografo } from "@/lib/api";
+import { db } from "@/lib/db";
+import { type Fotografo } from "@/lib/api";
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/Button";
@@ -15,32 +16,24 @@ export default function FotografosPage() {
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
 
-  async function carregar() {
+  function carregar() {
     setErro(null);
-    try {
-      setFotografos((await api.get<Fotografo[]>(`${MARKETPLACE_BASE}/api/fotografos`)) ?? []);
-    } catch (e) {
-      setErro((e as Error).message);
-    }
+    setFotografos(db.get("fotografos"));
   }
 
   useEffect(() => {
     carregar();
   }, []);
 
-  async function cadastrar(e: React.FormEvent) {
+  function cadastrar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null);
     setAviso(null);
-    try {
-      await api.post(`${MARKETPLACE_BASE}/api/fotografos`, { nome, email });
-      setNome("");
-      setEmail("");
-      setAviso("Fotógrafo cadastrado.");
-      await carregar();
-    } catch (e) {
-      setErro((e as Error).message);
-    }
+    db.add("fotografos", { nome: nome.trim(), email: email.trim() });
+    setNome("");
+    setEmail("");
+    setAviso("Fotógrafo cadastrado.");
+    carregar();
   }
 
   return (

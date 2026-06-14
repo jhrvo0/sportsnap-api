@@ -27,7 +27,7 @@ import com.sportsnap.session.dominio.spot.SpotRepositorio;
 class SpotJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int id;
+    Integer id;
     String nome;
     double latitude;
     double longitude;

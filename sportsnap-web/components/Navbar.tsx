@@ -5,11 +5,12 @@ import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 
 const linksAtleta = [
+  { href: "/atletas", label: "Dashboard" },
   { href: "/loja", label: "Loja" },
+  { href: "/checkin", label: "Check-in" },
   { href: "/ranking", label: "Ranking" },
   { href: "/spots", label: "Spots" },
   { href: "/sessoes", label: "Sessões" },
-  { href: "/perfil", label: "Perfil" },
 ];
 
 const linksFotografo = [
@@ -17,7 +18,6 @@ const linksFotografo = [
   { href: "/upload", label: "Upload" },
   { href: "/spots", label: "Spots" },
   { href: "/sessoes", label: "Sessões" },
-  { href: "/perfil", label: "Perfil" },
 ];
 
 const linksPublicos = [
@@ -38,29 +38,29 @@ export function Navbar() {
         : linksPublicos;
 
   return (
-    <header className="sticky top-0 z-50 glass border-b border-black/5">
-      <nav className="mx-auto flex max-w-6xl items-center px-6 py-3">
+    <header className="sticky top-0 z-50 glass border-b border-black/5 px-6">
+      <nav className="mx-auto flex max-w-7xl items-center py-4">
         <Link
           href="/"
-          className="flex items-center gap-2 text-base font-semibold tracking-tight text-ink-900"
+          className="flex items-center gap-3 text-xl font-black tracking-tighter text-ink-900 group"
         >
-          <span className="grid h-7 w-7 place-items-center rounded-lg bg-ink-900 text-[11px] font-bold text-white">
+          <span className="grid h-9 w-9 place-items-center rounded-xl bg-ink-900 text-[14px] font-black text-white transition-transform group-hover:scale-110 group-active:scale-95">
             S
           </span>
           SportSnap
         </Link>
 
-        <div className="ml-8 hidden items-center gap-1 md:flex">
+        <div className="ml-12 hidden items-center gap-2 md:flex">
           {links.map((l) => {
             const active = pathname === l.href;
             return (
               <Link
                 key={l.href}
                 href={l.href}
-                className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition ${
+                className={`rounded-full px-5 py-2 text-[13px] font-bold transition-all duration-200 ${
                   active
-                    ? "bg-ink-900 text-white"
-                    : "text-ink-600 hover:bg-ink-100 hover:text-ink-900"
+                    ? "bg-ink-900 text-white shadow-md"
+                    : "text-ink-500 hover:bg-ink-100/50 hover:text-ink-900"
                 }`}
               >
                 {l.label}
@@ -69,14 +69,14 @@ export function Navbar() {
           })}
         </div>
 
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex items-center gap-4">
           {sessao ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-4">
               <Link
                 href="/perfil"
-                className="hidden items-center gap-2 rounded-full bg-ink-50 px-3 py-1.5 text-[13px] font-medium text-ink-700 hover:bg-ink-100 sm:flex"
+                className="hidden items-center gap-3 rounded-full bg-ink-50 px-4 py-2 text-[13px] font-bold text-ink-700 hover:bg-ink-100 transition-colors sm:flex"
               >
-                <span className="grid h-6 w-6 place-items-center rounded-full bg-accent text-[11px] font-semibold text-white">
+                <span className="grid h-7 w-7 place-items-center rounded-full bg-accent text-[12px] font-black text-white">
                   {sessao.nome.charAt(0).toUpperCase()}
                 </span>
                 {sessao.nome.split(" ")[0]}
@@ -86,7 +86,7 @@ export function Navbar() {
                   logout();
                   router.push("/");
                 }}
-                className="rounded-full px-3 py-1.5 text-[13px] font-medium text-ink-500 hover:bg-ink-100 hover:text-ink-900"
+                className="rounded-full px-4 py-2 text-[13px] font-bold text-ink-400 hover:bg-ink-100 hover:text-ink-900 transition-colors"
               >
                 Sair
               </button>
@@ -94,7 +94,7 @@ export function Navbar() {
           ) : (
             <Link
               href="/login"
-              className="rounded-full bg-ink-900 px-4 py-1.5 text-[13px] font-medium text-white transition hover:bg-ink-800"
+              className="rounded-full bg-ink-900 px-6 py-2.5 text-[13px] font-bold text-white transition-all hover:bg-ink-800 hover:scale-105 active:scale-95 shadow-md"
             >
               Entrar
             </Link>

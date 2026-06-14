@@ -2,8 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, MARKETPLACE_BASE, SESSION_BASE, type Lote, type Sessao, type Spot } from "@/lib/api";
+import { db } from "@/lib/db";
 import { useAuth } from "@/lib/auth";
+import { type Lote, type Sessao, type Spot } from "@/lib/api";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
@@ -14,13 +15,15 @@ import { Badge } from "@/components/Badge";
 export default function LotesPage() {
   const { sessao, carregando } = useAuth();
   const router = useRouter();
+  
   const [lotes, setLotes] = useState<Lote[]>([]);
   const [spots, setSpots] = useState<Spot[]>([]);
   const [sessoes, setSessoes] = useState<Sessao[]>([]);
+  
   const [spotId, setSpotId] = useState("");
   const [sessaoId, setSessaoId] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [erro, setErro] = useState<string | null>(null);
+  
   const [aviso, setAviso] = useState<string | null>(null);
 
   useEffect(() => {
@@ -28,21 +31,11 @@ export default function LotesPage() {
     if (sessao && sessao.role !== "fotografo") router.replace("/perfil");
   }, [sessao, carregando, router]);
 
-  async function carregar() {
-    if (!sessao || sessao.role !== "fotografo") return;
-    setErro(null);
-    try {
-      const [ls, ss, sps] = await Promise.all([
-        api.get<Lote[]>(`${MARKETPLACE_BASE}/api/lotes?fotografoId=${sessao.id}`),
-        api.get<Sessao[]>(`${SESSION_BASE}/api/sessoes`),
-        api.get<Spot[]>(`${SESSION_BASE}/api/spots`),
-      ]);
-      setLotes(ls ?? []);
-      setSessoes(ss ?? []);
-      setSpots(sps ?? []);
-    } catch (e) {
-      setErro((e as Error).message);
-    }
+  function carregar() {
+    if (!sessao) return;
+    setLotes(db.filter("lotes", l => l.fotografoId === sessao.id));
+    setSessoes(db.get("sessoes"));
+    setSpots(db.get("spots"));
   }
 
   useEffect(() => {
@@ -52,35 +45,27 @@ export default function LotesPage() {
   async function criar(e: React.FormEvent) {
     e.preventDefault();
     if (!sessao) return;
-    setErro(null);
-    setAviso(null);
-    try {
-      await api.post(`${MARKETPLACE_BASE}/api/lotes`, {
-        fotografoId: sessao.id,
-        sessaoId: parseInt(sessaoId, 10),
-        spotId: parseInt(spotId, 10),
-        descricao,
-      });
-      setAviso("Lote criado com sucesso.");
-      setSpotId("");
-      setSessaoId("");
-      setDescricao("");
-      await carregar();
-    } catch (e) {
-      setErro((e as Error).message);
-    }
+    
+    db.add("lotes", {
+      fotografoId: sessao.id,
+      sessaoId: parseInt(sessaoId, 10),
+      spotId: parseInt(spotId, 10),
+      descricao,
+      criadoEm: new Date().toISOString(),
+      arquivado: false,
+    });
+
+    setAviso("Lote criado! Agora você pode fazer o upload das fotos.");
+    setSpotId("");
+    setSessaoId("");
+    setDescricao("");
+    carregar();
   }
 
-  async function arquivar(id: number) {
-    setErro(null);
-    setAviso(null);
-    try {
-      await api.post(`${MARKETPLACE_BASE}/api/lotes/${id}/arquivar`, {});
-      setAviso(`Lote #${id} arquivado.`);
-      await carregar();
-    } catch (e) {
-      setErro((e as Error).message);
-    }
+  function arquivar(id: number) {
+    db.update("lotes", id, { arquivado: true });
+    setAviso(`Lote #${id} arquivado. Novas fotos não podem ser adicionadas.`);
+    carregar();
   }
 
   if (!sessao) return null;
@@ -89,81 +74,87 @@ export default function LotesPage() {
     <div className="fade-up">
       <PageHeader
         eyebrow="Fotógrafo"
-        title="Meus Lotes"
-        subtitle="Cada lote agrupa fotos de uma sessão em um spot."
+        title="Gestão de Álbuns"
+        subtitle="Organize suas capturas em lotes vinculados a eventos reais."
       />
 
-      {erro && <Alert tone="danger">{erro}</Alert>}
-      {aviso && <Alert tone="success">{aviso}</Alert>}
+      {aviso && <Alert tone="success" className="mb-8">{aviso}</Alert>}
 
-      <div className="grid gap-6 lg:grid-cols-[1fr_2fr]">
-        <Card title="Novo Lote">
-          <form onSubmit={criar} className="space-y-4">
+      <div className="grid gap-8 lg:grid-cols-[1fr_2fr]">
+        <Card title="Criar Novo Lote">
+          <form onSubmit={criar} className="space-y-5">
             <Select
-              label="Spot"
+              label="Local (Spot)"
               value={spotId}
               onChange={(e) => setSpotId(e.target.value)}
               required
             >
               <option value="">Selecione...</option>
               {spots.map((s) => (
-                <option key={s.id} value={s.id}>
-                  #{s.id} – {s.nome}
-                </option>
+                <option key={s.id} value={s.id}>{s.nome}</option>
               ))}
             </Select>
             <Select
-              label="Sessão"
+              label="Sessão de Treino"
               value={sessaoId}
               onChange={(e) => setSessaoId(e.target.value)}
               required
             >
               <option value="">Selecione...</option>
               {sessoes.map((s) => (
-                <option key={s.id} value={s.id}>
-                  #{s.id} – {s.descricao}
-                </option>
+                <option key={s.id} value={s.id}>{s.descricao}</option>
               ))}
             </Select>
             <Input
-              label="Descrição"
+              label="Título do Álbum"
               value={descricao}
               onChange={(e) => setDescricao(e.target.value)}
-              placeholder="Ex: Surf matinal Maracaípe"
+              placeholder="Ex: Surf Matinal Stella Maris"
               required
             />
             <Button type="submit" className="w-full" size="lg">
-              Criar Lote
+              Gerar Lote
             </Button>
           </form>
         </Card>
 
-        <Card title={`Seus Lotes (${lotes.length})`}>
+        <Card title={`Seus Álbuns (${lotes.length})`}>
           {lotes.length === 0 ? (
-            <p className="text-sm text-ink-500">Nenhum lote ainda. Crie o primeiro ao lado.</p>
+            <div className="py-20 text-center bg-ink-50 rounded-[2rem] border border-dashed border-ink-200">
+               <p className="text-sm text-ink-500">Nenhum lote criado ainda.</p>
+            </div>
           ) : (
-            <ul className="divide-y divide-ink-100">
+            <div className="space-y-4">
               {lotes.map((l) => (
-                <li key={l.id} className="flex items-center justify-between py-4">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-[12px] text-ink-400">#{l.id}</span>
-                      <h3 className="font-semibold text-ink-900">{l.descricao}</h3>
-                      {l.arquivado && <Badge tone="warning">Arquivado</Badge>}
+                <div key={l.id} className="surface flex items-center justify-between p-6 rounded-[2rem] transition-all hover:border-accent/20">
+                  <div className="flex items-center gap-5">
+                    <div className="h-16 w-16 rounded-2xl bg-ink-900 flex items-center justify-center text-white font-black">
+                       {l.id}
                     </div>
-                    <p className="mt-0.5 text-[12px] text-ink-500">
-                      Spot #{l.spotId} · Sessão #{l.sessaoId} ·{" "}
-                      {new Date(l.criadoEm).toLocaleString("pt-BR")}
-                    </p>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-bold text-ink-900">{l.descricao}</h3>
+                        {l.arquivado && <Badge tone="warning">Arquivado</Badge>}
+                      </div>
+                      <p className="mt-1 text-[12px] text-ink-500">
+                        {spots.find(s => s.id === l.spotId)?.nome} · {new Date(l.criadoEm).toLocaleDateString("pt-BR")}
+                      </p>
+                    </div>
                   </div>
-                  {!l.arquivado && (
-                    <Button variant="ghost" size="sm" onClick={() => arquivar(l.id)}>
-                      Arquivar
+                  
+                  <div className="flex gap-2">
+                    <Button variant="secondary" size="sm" onClick={() => router.push(`/upload?loteId=${l.id}`)}>
+                       Subir Fotos
                     </Button>
-                  )}
-                </li>
+                    {!l.arquivado && (
+                      <Button variant="ghost" size="sm" className="text-ink-400" onClick={() => arquivar(l.id)}>
+                        Arquivar
+                      </Button>
+                    )}
+                  </div>
+                </div>
               ))}
-            </ul>
+            </div>
           )}
         </Card>
       </div>

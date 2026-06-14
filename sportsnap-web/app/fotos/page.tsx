@@ -1,23 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, MARKETPLACE_BASE, type Foto } from "@/lib/api";
+import { db } from "@/lib/db";
+import { type Foto } from "@/lib/api";
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/Badge";
-import { Alert } from "@/components/Alert";
 
 export default function FotosPage() {
   const [fotos, setFotos] = useState<Foto[]>([]);
-  const [erro, setErro] = useState<string | null>(null);
 
-  async function carregar() {
-    setErro(null);
-    try {
-      setFotos((await api.get<Foto[]>(`${MARKETPLACE_BASE}/api/fotos`)) ?? []);
-    } catch (e) {
-      setErro((e as Error).message);
-    }
+  function carregar() {
+    setFotos(db.get("fotos"));
   }
 
   useEffect(() => {
@@ -31,8 +25,6 @@ export default function FotosPage() {
         title="Fotos"
         subtitle={`Total no marketplace: ${fotos.length}`}
       />
-
-      {erro && <Alert tone="danger">{erro}</Alert>}
 
       {fotos.length === 0 ? (
         <Card>
@@ -49,7 +41,7 @@ export default function FotosPage() {
           {fotos.map((f) => (
             <article key={f.id} className="surface-elev overflow-hidden rounded-3xl">
               <div className="aspect-[4/3] bg-gradient-to-br from-purple-300 via-pink-300 to-rose-300 p-3 text-[10px] font-mono text-white">
-                preview #{f.id}
+                prévia #{f.id}
               </div>
               <div className="p-5">
                 <div className="flex items-center justify-between">

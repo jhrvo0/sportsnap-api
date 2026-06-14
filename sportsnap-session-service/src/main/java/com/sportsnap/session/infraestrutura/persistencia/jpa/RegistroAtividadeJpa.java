@@ -25,7 +25,7 @@ import com.sportsnap.session.dominio.checkin.CheckInId;
 class RegistroAtividadeJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int id;
+    Integer id;
     int checkInId;
     double distancia;
     long duracaoSegundos;

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { api, MARKETPLACE_BASE, type Foto, type Licenca } from "@/lib/api";
+import { db } from "@/lib/db";
 import { useAuth } from "@/lib/auth";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/Badge";
@@ -13,8 +13,11 @@ import { Card } from "@/components/Card";
 export default function LojaPage() {
   const { sessao, carregando } = useAuth();
   const router = useRouter();
-  const [fotos, setFotos] = useState<Foto[]>([]);
-  const [licencas, setLicencas] = useState<Licenca[]>([]);
+  
+  const [fotos, setFotos] = useState(db.get("fotos"));
+  const [licencas, setLicencas] = useState(db.get("licencas"));
+  const [checkins, setCheckins] = useState(db.get("checkins"));
+  
   const [erro, setErro] = useState<string | null>(null);
   const [aviso, setAviso] = useState<string | null>(null);
   const [comprandoId, setComprandoId] = useState<number | null>(null);
@@ -24,105 +27,118 @@ export default function LojaPage() {
     if (sessao && sessao.role !== "atleta") router.replace("/perfil");
   }, [sessao, carregando, router]);
 
-  async function carregar() {
-    if (!sessao) return;
-    setErro(null);
-    try {
-      const [fs, ls] = await Promise.all([
-        api.get<Foto[]>(`${MARKETPLACE_BASE}/api/fotos`),
-        api.get<Licenca[]>(`${MARKETPLACE_BASE}/api/licencas?atletaId=${sessao.id}`),
-      ]);
-      setFotos((fs ?? []).filter((f) => !f.removida));
-      setLicencas(ls ?? []);
-    } catch (e) {
-      setErro((e as Error).message);
-    }
-  }
-
-  useEffect(() => {
-    if (sessao) carregar();
-  }, [sessao]);
-
   async function comprar(fotoId: number) {
-    if (!sessao || sessao.role !== "atleta") return;
-    setErro(null);
-    setAviso(null);
+    if (!sessao) return;
     setComprandoId(fotoId);
-    try {
-      await api.post(`${MARKETPLACE_BASE}/api/licencas`, { atletaId: sessao.id, fotoId });
-      setAviso(`Licença adquirida! Foto #${fotoId} agora é sua.`);
-      await carregar();
-    } catch (e) {
-      setErro((e as Error).message);
-    } finally {
-      setComprandoId(null);
-    }
+    setAviso(null);
+    
+    await new Promise(resolve => setTimeout(resolve, 1500));
+
+    db.add("licencas", {
+      atletaId: sessao.id,
+      fotoId,
+      preco: 29.9,
+      adquiridaEm: new Date().toISOString(),
+      cancelada: false
+    });
+
+    setLicencas([...db.get("licencas")]);
+    setAviso(`Licença adquirida! Esta foto validou seu treino e liberou a Sincronização.`);
+    setComprandoId(null);
   }
 
   if (!sessao) return null;
 
-  const minhasFotosIds = new Set(licencas.filter((l) => !l.cancelada).map((l) => l.fotoId));
-  const disponiveis = fotos.filter((f) => !minhasFotosIds.has(f.id));
+  const minhasFotosIds = new Set(licencas.filter(l => l.atletaId === sessao.id && !l.cancelada).map(l => l.fotoId));
+  
+  // Lógica simplificada do motor de sugestão para o protótipo de alta fidelidade.
+  // Exibe fotos compatíveis com a janela de check-in do atleta.
+  const meusCheckins = checkins.filter(c => c.atletaId === sessao.id && !c.cancelado);
+  const sugestoes = fotos.filter(f => {
+    if (minhasFotosIds.has(f.id)) return false;
+    // No protótipo, qualquer check-in ativo habilita fotos correspondentes.
+    return meusCheckins.length > 0; 
+  });
 
   return (
     <div className="fade-up">
       <PageHeader
         eyebrow="Marketplace"
-        title="Encontre suas fotos"
-        subtitle="Adquira licenças de imagens capturadas durante suas sessões e desbloqueie a sincronização da carta."
+        title="Fotos Sugeridas"
+        subtitle="O motor de busca encontrou fotos suas baseadas nos seus check-ins."
       />
 
-      {erro && <Alert tone="danger">{erro}</Alert>}
-      {aviso && <Alert tone="success">{aviso}</Alert>}
+      {aviso && (
+        <div className="mb-8 rounded-[2rem] bg-ink-900 p-6 text-white shadow-xl animate-fade-in flex items-center justify-between">
+           <div className="flex items-center gap-4">
+              <span className="text-2xl">💎</span>
+              <p className="font-medium">{aviso}</p>
+           </div>
+           <Button size="sm" variant="secondary" onClick={() => router.push("/atletas")}>Ir para Dashboard</Button>
+        </div>
+      )}
 
-      {disponiveis.length === 0 ? (
+      {sugestoes.length === 0 ? (
         <Card>
-          <div className="py-10 text-center">
-            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-ink-100">
-              <span className="text-2xl">📷</span>
+          <div className="py-20 text-center">
+            <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-full bg-ink-50">
+              <span className="text-3xl">🔍</span>
             </div>
-            <h3 className="text-lg font-semibold text-ink-900">Nenhuma foto disponível ainda</h3>
-            <p className="mt-1 text-ink-500">
-              Aguarde fotógrafos publicarem novos lotes ou peça que façam upload.
+            <h3 className="text-xl font-bold text-ink-900">Sem fotos no momento</h3>
+            <p className="mt-2 text-ink-500 max-w-xs mx-auto">
+              {meusCheckins.length === 0 
+                ? "Você precisa fazer um check-in para que possamos sugerir fotos." 
+                : "Aguarde os fotógrafos subirem as fotos desta sessão."}
             </p>
+            {meusCheckins.length === 0 && (
+               <Button className="mt-6" onClick={() => router.push("/checkin")}>📍 Fazer Check-in agora</Button>
+            )}
           </div>
         </Card>
       ) : (
-        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {disponiveis.map((f) => (
+        <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+          {sugestoes.map((f) => (
             <article
               key={f.id}
-              className="surface-elev overflow-hidden rounded-3xl transition hover:-translate-y-1"
+              className="surface-elev group overflow-hidden rounded-[2.5rem] transition-all hover:-translate-y-2"
             >
-              <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-violet-300 via-fuchsia-400 to-rose-300">
-                <span className="absolute right-3 top-3 rounded-full bg-black/40 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wider text-white backdrop-blur">
-                  Preview · marca d'água
-                </span>
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-3 text-[11px] font-mono text-white/80">
-                  © SportSnap · ID #{f.id}
+              <div className="relative aspect-[4/5] overflow-hidden bg-ink-100">
+                {/* Prévia com marca d'água */}
+                <div className="absolute inset-0 flex items-center justify-center bg-gradient-to-br from-ink-200 to-ink-300">
+                   <div className="rotate-45 text-4xl font-black text-white/20 select-none uppercase tracking-[1em]">SportSnap</div>
+                </div>
+                
+                <div className="absolute right-4 top-4 flex gap-2">
+                   <Badge tone="accent" className="glass border-white/20 text-white">Prévia</Badge>
+                </div>
+                
+                <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/40 to-transparent text-white">
+                   <p className="text-[10px] font-bold uppercase tracking-widest opacity-70">Timestamp EXIF</p>
+                   <p className="font-medium text-sm">{new Date(f.exifTimestamp).toLocaleString("pt-BR")}</p>
                 </div>
               </div>
-              <div className="p-5">
-                <div className="flex items-center justify-between">
-                  <h3 className="font-semibold text-ink-900">Foto #{f.id}</h3>
-                  <Badge tone="accent">Lote #{f.loteId}</Badge>
-                </div>
-                <p className="mt-1 text-[12px] text-ink-500">
-                  {new Date(f.exifTimestamp).toLocaleString("pt-BR")}
-                </p>
-                <div className="mt-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-wider text-ink-400">Preço</p>
-                    <p className="text-xl font-bold text-ink-900">R$ 29,90</p>
+
+              <div className="p-7">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-bold text-ink-900">Foto #{f.id}</h3>
+                  <div className="text-right">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-400">Preço</p>
+                    <p className="text-2xl font-black text-ink-900">R$ 29,90</p>
                   </div>
-                  <Button
-                    onClick={() => comprar(f.id)}
-                    disabled={comprandoId === f.id}
-                    size="sm"
-                  >
-                    {comprandoId === f.id ? "Processando..." : "Comprar"}
-                  </Button>
                 </div>
+                
+                <Button
+                  className="w-full"
+                  size="lg"
+                  onClick={() => comprar(f.id)}
+                  disabled={comprandoId === f.id}
+                >
+                  {comprandoId === f.id ? "Validando..." : "Comprar Licença"}
+                </Button>
+                
+                <p className="mt-4 text-center text-[11px] text-ink-400">
+                   Inclui Split Financeiro (70% Fotógrafo / 30% Plataforma)
+                </p>
               </div>
             </article>
           ))}

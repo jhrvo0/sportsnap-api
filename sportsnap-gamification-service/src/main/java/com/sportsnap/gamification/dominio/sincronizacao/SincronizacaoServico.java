@@ -9,7 +9,6 @@ import com.sportsnap.gamification.dominio.evento.EventoBarramento;
 import com.sportsnap.gamification.dominio.potencial.StatusPotencial;
 import com.sportsnap.gamification.dominio.potencial.StatusPotencialRepositorio;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -44,9 +43,7 @@ public class SincronizacaoServico {
         if (carta.isEmpty()) {
             return false;
         }
-        var ultimaSync = carta.get().getUltimaSincronizacao();
-        var instante = ultimaSync != null ? ultimaSync : LocalDateTime.MIN;
-        return licencaRepositorio.existeLicencaPosterior(atletaId, instante);
+        return possuiLicencaValidaParaSincronizacao(atletaId, carta.get());
     }
 
     public StatusPotencial consultarShadowStats(AtletaId atletaId) {
@@ -68,9 +65,7 @@ public class SincronizacaoServico {
             throw new IllegalStateException("Atleta nao possui XP acumulado para sincronizar");
         }
 
-        var ultimaSync = carta.getUltimaSincronizacao();
-        var instanteReferencia = ultimaSync != null ? ultimaSync : LocalDateTime.MIN;
-        if (!licencaRepositorio.existeLicencaPosterior(atletaId, instanteReferencia)) {
+        if (!possuiLicencaValidaParaSincronizacao(atletaId, carta)) {
             throw new IllegalStateException("RN01: sincronizacao requer licenca posterior a ultima Reveal");
         }
 
@@ -82,6 +77,14 @@ public class SincronizacaoServico {
 
         barramento.postar(new CartaSincronizadaEvento(carta, xpTotal));
         return carta;
+    }
+
+    private boolean possuiLicencaValidaParaSincronizacao(AtletaId atletaId, CartaOficial carta) {
+        var ultimaSync = carta.getUltimaSincronizacao();
+        if (ultimaSync == null) {
+            return !licencaRepositorio.listarPorAtleta(atletaId).isEmpty();
+        }
+        return licencaRepositorio.existeLicencaPosterior(atletaId, ultimaSync);
     }
 
     public List<CartaOficial> listarHistoricoSincronizacoes(AtletaId atletaId) {

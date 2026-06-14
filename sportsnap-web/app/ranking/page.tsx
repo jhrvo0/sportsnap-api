@@ -1,24 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { api, GAMIFICATION_BASE, type CartaResumo } from "@/lib/api";
+import { db } from "@/lib/db";
+import { type CartaResumo } from "@/lib/api";
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/Button";
-import { Alert } from "@/components/Alert";
 
 export default function RankingPage() {
   const [ranking, setRanking] = useState<CartaResumo[]>([]);
-  const [erro, setErro] = useState<string | null>(null);
 
   async function carregar() {
-    setErro(null);
-    try {
-      const data = await api.get<CartaResumo[]>(`${GAMIFICATION_BASE}/api/ranking`);
-      setRanking(data ?? []);
-    } catch (e) {
-      setErro((e as Error).message);
-    }
+    // Busca as cartas ranqueadas no banco local do protótipo.
+    const data = db.getRankedCartas();
+    setRanking(data);
   }
 
   useEffect(() => {
@@ -28,52 +23,58 @@ export default function RankingPage() {
   return (
     <div className="fade-up">
       <PageHeader
-        eyebrow="Leaderboard"
+        eyebrow="Ranking"
         title="Ranking Global"
         subtitle="Cartas Oficiais sincronizadas, ordenadas por Overall."
       >
         <Button variant="secondary" onClick={carregar}>
-          Atualizar
+          Atualizar Ranking
         </Button>
       </PageHeader>
 
-      {erro && <Alert tone="danger">{erro}</Alert>}
-
       {ranking.length === 0 ? (
         <Card>
-          <div className="py-10 text-center">
-            <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-full bg-ink-100">
-              <span className="text-2xl">🏆</span>
+          <div className="py-20 text-center">
+            <div className="mx-auto mb-6 grid h-20 w-20 place-items-center rounded-full bg-ink-100">
+              <span className="text-3xl">🏆</span>
             </div>
-            <h3 className="text-lg font-semibold text-ink-900">Ranking ainda vazio</h3>
-            <p className="mt-1 text-ink-500">
-              Cadastre atletas, compre fotos e dispare a Sincronização para entrar no leaderboard.
+            <h3 className="text-xl font-semibold text-ink-900">O pódio está vazio</h3>
+            <p className="mt-2 text-ink-500 max-w-sm mx-auto">
+              Seja o primeiro a sincronizar sua carta e assumir a liderança do SportSnap.
             </p>
           </div>
         </Card>
       ) : (
-        <ol className="space-y-3">
+        <ol className="space-y-4">
           {ranking.map((c, i) => {
             const medalha = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : null;
+            const cartaCompleta = db.find("cartas", cart => cart.atletaId === c.atletaId);
+            
             return (
-              <li key={c.atletaId} className="surface flex items-center gap-5 rounded-3xl p-5">
-                <div className="flex h-12 w-12 items-center justify-center text-2xl font-bold text-ink-900">
-                  {medalha ?? <span className="text-ink-400">#{i + 1}</span>}
+              <li key={c.atletaId} className="surface flex items-center gap-6 rounded-[2rem] p-6 transition-all hover:border-accent/30 hover:shadow-soft">
+                <div className="flex h-14 w-14 items-center justify-center text-3xl font-black text-ink-900">
+                  {medalha ?? <span className="text-ink-200 font-mono text-xl">#{i + 1}</span>}
                 </div>
+                
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-ink-50 overflow-hidden border border-ink-100">
+                   <span className="text-xl">👤</span>
+                </div>
+
                 <div className="flex-1">
-                  <div className="font-semibold text-ink-900">Atleta #{c.atletaId}</div>
-                  <div className="text-[12px] text-ink-500">
-                    Última sync:{" "}
+                  <div className="font-bold text-lg text-ink-900">{cartaCompleta?.nome || `Atleta #${c.atletaId}`}</div>
+                  <div className="text-[11px] font-medium uppercase tracking-wider text-ink-400">
+                    Sincronizado em:{" "}
                     {c.ultimaSincronizacao
-                      ? new Date(c.ultimaSincronizacao).toLocaleString("pt-BR")
+                      ? new Date(c.ultimaSincronizacao).toLocaleDateString("pt-BR")
                       : "—"}
                   </div>
                 </div>
+
                 <div className="text-right">
-                  <div className="text-3xl font-bold tracking-tight text-ink-900">
+                  <div className="text-4xl font-black italic tracking-tighter text-ink-900">
                     {c.overall.toFixed(1)}
                   </div>
-                  <div className="text-[10px] uppercase tracking-wider text-ink-400">Overall</div>
+                  <div className="text-[10px] font-bold uppercase tracking-[0.2em] text-accent">Overall</div>
                 </div>
               </li>
             );

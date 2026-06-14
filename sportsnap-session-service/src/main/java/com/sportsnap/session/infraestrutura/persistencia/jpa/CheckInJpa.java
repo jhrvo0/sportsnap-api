@@ -27,7 +27,7 @@ import com.sportsnap.session.dominio.spot.Coordenada;
 class CheckInJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    int id;
+    Integer id;
     int atletaId;
     int sessaoId;
     LocalDateTime horario;

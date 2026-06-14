@@ -1,6 +1,7 @@
 type Props = {
   tone?: "info" | "success" | "danger" | "warning";
   children: React.ReactNode;
+  className?: string;
 };
 
 const tones = {
@@ -10,8 +11,8 @@ const tones = {
   warning: "bg-amber-100 text-amber-700",
 };
 
-export function Alert({ tone = "info", children }: Props) {
+export function Alert({ tone = "info", children, className = "" }: Props) {
   return (
-    <div className={`mb-6 rounded-2xl px-4 py-3 text-sm ${tones[tone]}`}>{children}</div>
+    <div className={`mb-6 rounded-2xl px-4 py-3 text-sm ${tones[tone]} ${className}`}>{children}</div>
   );
 }
