@@ -37,6 +37,11 @@ class CartaOficialJpa {
     double overall;
     LocalDateTime ultimaSincronizacao;
 
+    @Column(name = "TIER")
+    String tier;
+    double saldoPontos;
+    boolean arquivada;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "ATRIBUTO_ESPORTIVO", joinColumns = @JoinColumn(name = "ATLETA_ID"))
     List<AtributoEsportivoJpa> atributos = new ArrayList<>();

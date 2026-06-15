@@ -118,15 +118,16 @@ const INITIAL_DATA: DBData = {
   fotos: [],
   licencas: [],
   atletas: [
-    { id: 1, nome: "João Henrique", email: "joao@atleta.com" }
+    { id: 1, nome: "Maria Atleta", email: "maria@email.com" },
+    { id: 2, nome: "Joao Silva", email: "joao@email.com" }
   ],
   fotografos: [
     { id: 2, nome: "Antônio Paes", email: "antonio@foto.com" }
   ],
   cartas: [
-    { 
-      atletaId: 1, 
-      nome: "João Henrique", 
+    {
+      atletaId: 1,
+      nome: "Maria Atleta",
       overall: 78.5, 
       resistencia: 80, 
       velocidade: 75, 

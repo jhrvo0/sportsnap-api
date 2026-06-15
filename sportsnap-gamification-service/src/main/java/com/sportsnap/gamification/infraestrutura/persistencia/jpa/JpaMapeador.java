@@ -12,6 +12,7 @@ import com.sportsnap.gamification.dominio.atleta.AtletaId;
 import com.sportsnap.gamification.dominio.atleta.Email;
 import com.sportsnap.gamification.dominio.carta.AtributoEsportivo;
 import com.sportsnap.gamification.dominio.carta.CartaOficial;
+import com.sportsnap.gamification.dominio.carta.TierCarta;
 import com.sportsnap.gamification.dominio.potencial.StatusPotencial;
 import com.sportsnap.gamification.dominio.sincronizacao.Licenca;
 
@@ -37,7 +38,9 @@ class JpaMapeador {
         List<AtributoEsportivo> atributos = jpa.atributos.stream()
             .map(a -> new AtributoEsportivo(a.nome, a.valor, a.peso, a.tipoEsporte))
             .toList();
-        return new CartaOficial(atletaId, atributos, jpa.overall, jpa.ultimaSincronizacao);
+        var tier = jpa.tier != null ? TierCarta.valueOf(jpa.tier) : TierCarta.paraOverall(jpa.overall);
+        return new CartaOficial(atletaId, atributos, jpa.overall, jpa.ultimaSincronizacao,
+            tier, jpa.saldoPontos, jpa.arquivada);
     }
 
     CartaOficialJpa paraJpa(CartaOficial dominio) {
@@ -45,6 +48,9 @@ class JpaMapeador {
         jpa.atletaId = dominio.getAtletaId().getId();
         jpa.overall = dominio.getOverall();
         jpa.ultimaSincronizacao = dominio.getUltimaSincronizacao();
+        jpa.tier = dominio.getTier().name();
+        jpa.saldoPontos = dominio.getSaldoPontos();
+        jpa.arquivada = dominio.isArquivada();
         jpa.atributos = dominio.getAtributos().stream()
             .map(a -> {
                 var aJpa = new AtributoEsportivoJpa();

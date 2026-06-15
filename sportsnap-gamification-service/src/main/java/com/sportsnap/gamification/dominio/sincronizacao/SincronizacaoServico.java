@@ -100,7 +100,7 @@ public class SincronizacaoServico {
         private final CartaOficial carta;
         private final double xpTransferido;
 
-        CartaSincronizadaEvento(CartaOficial carta, double xpTransferido) {
+        public CartaSincronizadaEvento(CartaOficial carta, double xpTransferido) {
             this.carta = carta;
             this.xpTransferido = xpTransferido;
         }
