@@ -22,19 +22,23 @@ public class VendaServico {
     private final SplitRepositorio splitRepositorio;
     private final FotoRepositorio fotoRepositorio;
     private final EventoBarramento barramento;
+    private final com.sportsnap.marketplace.dominio.assinatura.AssinaturaServico assinaturaServico;
 
     public VendaServico(LicencaRepositorio licencaRepositorio,
                          SplitRepositorio splitRepositorio,
                          FotoRepositorio fotoRepositorio,
-                         EventoBarramento barramento) {
+                         EventoBarramento barramento,
+                         com.sportsnap.marketplace.dominio.assinatura.AssinaturaServico assinaturaServico) {
         notNull(licencaRepositorio, "O repositorio de Licenca nao pode ser nulo");
         notNull(splitRepositorio, "O repositorio de Split nao pode ser nulo");
         notNull(fotoRepositorio, "O repositorio de Foto nao pode ser nulo");
         notNull(barramento, "O barramento de eventos nao pode ser nulo");
+        notNull(assinaturaServico, "O servico de assinatura nao pode ser nulo");
         this.licencaRepositorio = licencaRepositorio;
         this.splitRepositorio = splitRepositorio;
         this.fotoRepositorio = fotoRepositorio;
         this.barramento = barramento;
+        this.assinaturaServico = assinaturaServico;
     }
 
     public synchronized LicencaDeImagem processarVenda(AtletaId atletaId, FotoId fotoId) {
@@ -54,13 +58,24 @@ public class VendaServico {
             throw new IllegalStateException("Atleta ja possui licenca ativa para esta Foto");
         }
 
-        var licenca = new LicencaDeImagem(atletaId, fotoId, PRECO_PADRAO);
-        var salva = licencaRepositorio.salvar(licenca);
+        boolean viaCota = assinaturaServico.possuiCotaDisponivel(atletaId);
+        LicencaDeImagem licenca;
+        LicencaDeImagem salva;
+        SplitFinanceiro split = null;
 
-        var valorFotografo = PRECO_PADRAO.multiplicar(PERCENTUAL_FOTOGRAFO);
-        var taxaPlataforma = PRECO_PADRAO.multiplicar(PERCENTUAL_PLATAFORMA);
-        var split = new SplitFinanceiro(salva.getId(), valorFotografo, taxaPlataforma);
-        splitRepositorio.salvar(split);
+        if (viaCota) {
+            assinaturaServico.debitarCota(atletaId);
+            licenca = new LicencaDeImagem(atletaId, fotoId, Dinheiro.ZERO, true);
+            salva = licencaRepositorio.salvar(licenca);
+        } else {
+            licenca = new LicencaDeImagem(atletaId, fotoId, PRECO_PADRAO, false);
+            salva = licencaRepositorio.salvar(licenca);
+
+            var valorFotografo = PRECO_PADRAO.multiplicar(PERCENTUAL_FOTOGRAFO);
+            var taxaPlataforma = PRECO_PADRAO.multiplicar(PERCENTUAL_PLATAFORMA);
+            split = new SplitFinanceiro(salva.getId(), valorFotografo, taxaPlataforma);
+            splitRepositorio.salvar(split);
+        }
 
         foto.marcarLicenciada();
         fotoRepositorio.salvar(foto);
@@ -90,6 +105,11 @@ public class VendaServico {
         var licenca = obter(id);
         licenca.cancelar(LocalDateTime.now());
         licencaRepositorio.salvar(licenca);
+        
+        if (licenca.isAdquiridaViaCota()) {
+            assinaturaServico.restituirCota(licenca.getAtletaId());
+        }
+
         barramento.postar(new LicencaCanceladaEvento(licenca));
     }
 

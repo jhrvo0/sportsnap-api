@@ -36,6 +36,7 @@ class LicencaDeImagemJpa {
     BigDecimal preco;
     LocalDateTime adquiridaEm;
     boolean cancelada;
+    boolean adquiridaViaCota;
 }
 
 interface LicencaDeImagemJpaRepository extends JpaRepository<LicencaDeImagemJpa, Integer> {

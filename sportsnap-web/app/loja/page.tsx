@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { listarTodasFotos, comprarLicenca, type FotoDto } from "@/lib/marketplace";
+import { useCart } from "@/lib/cart";
+import { listarTodasFotos, type FotoDto } from "@/lib/marketplace";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
@@ -13,65 +14,44 @@ import { WatermarkedImage } from "@/components/WatermarkedImage";
 
 export default function LojaPage() {
   const { sessao, carregando } = useAuth();
+  const { cart, addToCart } = useCart();
   const router = useRouter();
 
   const [fotos, setFotos] = useState<FotoDto[]>([]);
-  const [aviso, setAviso] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [comprandoId, setComprandoId] = useState<number | null>(null);
 
   useEffect(() => {
     if (carregando) return;
     if (!sessao) { router.replace("/login"); return; }
     if (sessao.role !== "atleta") { router.replace("/perfil"); return; }
-    // Busca fotos só depois da auth estar resolvida
     listarTodasFotos()
       .then(setFotos)
       .catch(() => setErro("Não foi possível carregar as fotos. O backend está rodando?"));
   }, [sessao, carregando]);
 
-  async function comprar(fotoId: number) {
-    if (!sessao) return;
-    setComprandoId(fotoId);
-    setAviso(null);
-    setErro(null);
-    try {
-      await comprarLicenca(sessao.id, fotoId);
-      setAviso("Licença adquirida! Esta foto validou seu treino e liberou a Sincronização.");
-      // Recarrega fotos do backend — a comprada vai aparecer como licenciada e sair da loja
-      const atualizadas = await listarTodasFotos();
-      setFotos(atualizadas);
-    } catch {
-      setErro("Erro ao comprar licença.");
-    } finally {
-      setComprandoId(null);
-    }
-  }
-
   if (!sessao && !carregando) return null;
 
   // Usa o backend como fonte de verdade: foto aparece se não estiver licenciada no servidor
-  const sugestoes = fotos.filter(f => !f.licenciada);
+  // Excluímos da lista as fotos que já estão no carrinho
+  const fotosNoCarrinhoIds = new Set(cart.map((item) => item.id));
+  const sugestoes = fotos.filter(f => !f.licenciada && !fotosNoCarrinhoIds.has(f.id));
 
   return (
     <div className="fade-up">
-      <PageHeader
-        eyebrow="Marketplace"
-        title="Fotos Sugeridas"
-        subtitle="O motor de busca encontrou fotos suas baseadas nos seus check-ins."
-      />
+      <div className="flex justify-between items-start mb-6">
+        <PageHeader
+          eyebrow="Marketplace"
+          title="Fotos Sugeridas"
+          subtitle="O motor de busca encontrou fotos suas baseadas nos seus check-ins."
+        />
+        {cart.length > 0 && (
+          <Button onClick={() => router.push("/carrinho")} className="shrink-0 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/30">
+            Ver Carrinho ({cart.length})
+          </Button>
+        )}
+      </div>
 
       {erro && <Alert tone="danger" className="mb-6">{erro}</Alert>}
-
-      {aviso && (
-        <div className="mb-8 rounded-[2rem] bg-ink-900 p-6 text-white shadow-xl flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="text-2xl">💎</span>
-            <p className="font-medium">{aviso}</p>
-          </div>
-          <Button size="sm" variant="secondary" onClick={() => router.push("/atletas")}>Ir para Dashboard</Button>
-        </div>
-      )}
 
       {sugestoes.length === 0 ? (
         <Card>
@@ -81,7 +61,7 @@ export default function LojaPage() {
             </div>
             <h3 className="text-xl font-bold text-ink-900">Sem fotos no momento</h3>
             <p className="mt-2 text-ink-500 max-w-xs mx-auto">
-              Aguarde os fotógrafos subirem as fotos desta sessão.
+              Aguarde os fotógrafos subirem as fotos desta sessão ou verifique se você já adicionou tudo ao carrinho.
             </p>
           </div>
         </Card>
@@ -113,8 +93,8 @@ export default function LojaPage() {
                     <p className="text-2xl font-black text-ink-900">R$ 29,90</p>
                   </div>
                 </div>
-                <Button className="w-full" size="lg" onClick={() => comprar(f.id)} disabled={comprandoId === f.id}>
-                  {comprandoId === f.id ? "Validando..." : "Comprar Licença"}
+                <Button className="w-full" size="lg" onClick={() => addToCart(f)}>
+                  Adicionar ao Carrinho
                 </Button>
                 <p className="mt-4 text-center text-[11px] text-ink-400">
                   Inclui Split Financeiro (70% Fotógrafo / 30% Plataforma)

@@ -45,6 +45,8 @@ public class MotorSugestaoSteps {
             "Lote Sug");
         var fotos = fotoServico.uploadEmLote(lote.getId(), List.of("/fotos/sug.jpg"));
         foto = fotos.get(0);
+        var fotosHist = fotoServico.uploadEmLote(lote.getId(), List.of("/fotos/hist.jpg"));
+        vendaServico.processarVenda(new AtletaId(atletaId), fotosHist.get(0).getId());
     }
 
     @Dado("que existe uma Foto cujo EXIF esta fora da janela do Atleta {int}")
@@ -55,6 +57,8 @@ public class MotorSugestaoSteps {
             "Lote fora janela");
         var fotos = fotoServico.uploadEmLote(lote.getId(), List.of("/fotos/fora.jpg"));
         foto = fotos.get(0);
+        var fotosHist = fotoServico.uploadEmLote(lote.getId(), List.of("/fotos/hist2.jpg"));
+        vendaServico.processarVenda(new AtletaId(atletaId), fotosHist.get(0).getId());
     }
 
     @E("o Atleta {int} ja adquiriu essa Foto")

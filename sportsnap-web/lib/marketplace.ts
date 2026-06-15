@@ -30,6 +30,7 @@ export type DashboardDto = {
   totalVendas: number;
   receitaBruta: number;
   saldoDisponivel: number;
+  saldoPendente: number;
 };
 
 export type FotografoDto = {
@@ -41,7 +42,7 @@ export type FotografoDto = {
 // ─── Lotes ───────────────────────────────────────────────────────────────────
 
 export async function listarLotes(fotografoId: number): Promise<LoteDto[]> {
-  const r = await fetch(`${BASE}/lotes?fotografoId=${fotografoId}`);
+  const r = await fetch(`${BASE}/lotes?fotografoId=${fotografoId}`, { cache: "no-store" });
   if (!r.ok) throw new Error("Erro ao listar lotes");
   return r.json();
 }
@@ -89,24 +90,25 @@ export async function excluirLote(id: number): Promise<void> {
 // ─── Fotos ───────────────────────────────────────────────────────────────────
 
 export async function listarTodasFotos(): Promise<FotoDto[]> {
-  const r = await fetch(`${BASE}/fotos`);
+  const r = await fetch(`${BASE}/fotos`, { cache: "no-store" });
   if (!r.ok) throw new Error("Erro ao listar fotos");
   const fotos: FotoDto[] = await r.json();
   return fotos.filter((f) => !f.removida);
 }
 
 export async function listarFotos(loteId: number): Promise<FotoDto[]> {
-  const r = await fetch(`${BASE}/fotos?loteId=${loteId}`);
+  const r = await fetch(`${BASE}/fotos?loteId=${loteId}`, { cache: "no-store" });
   if (!r.ok) throw new Error("Erro ao listar fotos");
   const fotos: FotoDto[] = await r.json();
   return fotos.filter((f) => !f.removida);
 }
 
 export async function uploadFotos(loteId: number, fotos: { nome: string; urlPreview: string }[]): Promise<FotoDto[]> {
+  const caminhos = fotos.map(f => f.urlPreview);
   const r = await fetch(`${BASE}/fotos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ loteId, fotos }),
+    body: JSON.stringify({ loteId, caminhos }),
   });
   if (!r.ok) throw new Error("Erro ao fazer upload");
   return r.json();
@@ -120,7 +122,7 @@ export async function removerFoto(id: number): Promise<void> {
 // ─── Dashboard ───────────────────────────────────────────────────────────────
 
 export async function getDashboard(fotografoId: number): Promise<DashboardDto> {
-  const r = await fetch(`${BASE}/fotografos/${fotografoId}/dashboard`);
+  const r = await fetch(`${BASE}/fotografos/${fotografoId}/dashboard`, { cache: "no-store" });
   if (!r.ok) throw new Error("Erro ao carregar dashboard");
   return r.json();
 }
@@ -146,10 +148,21 @@ export async function comprarLicenca(atletaId: number, fotoId: number): Promise<
   return r.json();
 }
 
+export async function listarLicencas(atletaId: number): Promise<LicencaDto[]> {
+  const r = await fetch(`${BASE}/licencas?atletaId=${atletaId}`, { cache: "no-store" });
+  if (!r.ok) throw new Error("Erro ao listar licenças");
+  return r.json();
+}
+
+export async function cancelarLicenca(licencaId: number): Promise<void> {
+  const r = await fetch(`${BASE}/licencas/${licencaId}/cancelar`, { method: "POST" });
+  if (!r.ok) throw new Error("Erro ao cancelar licença");
+}
+
 // ─── Fotógrafos ──────────────────────────────────────────────────────────────
 
 export async function listarFotografos(): Promise<FotografoDto[]> {
-  const r = await fetch(`${BASE}/fotografos`);
+  const r = await fetch(`${BASE}/fotografos`, { cache: "no-store" });
   if (!r.ok) throw new Error("Erro ao listar fotógrafos");
   return r.json();
 }
@@ -161,4 +174,32 @@ export async function cadastrarFotografo(nome: string, email: string): Promise<v
     body: JSON.stringify({ nome, email }),
   });
   if (!r.ok) throw new Error("Erro ao cadastrar fotógrafo");
+}
+
+// ─── Assinatura ──────────────────────────────────────────────────────────────
+
+export type AssinaturaDto = {
+  id: string;
+  atletaId: number;
+  saldoCotas: number;
+  dataFimCiclo: string;
+  status: string;
+};
+
+export async function obterAssinatura(atletaId: number): Promise<AssinaturaDto | null> {
+  const r = await fetch(`${BASE}/assinaturas/${atletaId}`, { cache: "no-store" });
+  if (r.status === 404) return null;
+  if (!r.ok) throw new Error("Erro ao consultar assinatura");
+  return r.json();
+}
+
+export async function assinarPlano(atletaId: number): Promise<AssinaturaDto> {
+  const r = await fetch(`${BASE}/assinaturas/${atletaId}/assinar`, { method: "POST" });
+  if (!r.ok) throw new Error("Erro ao assinar plano");
+  return r.json();
+}
+
+export async function cancelarAssinatura(atletaId: number): Promise<void> {
+  const r = await fetch(`${BASE}/assinaturas/${atletaId}/cancelar`, { method: "POST" });
+  if (!r.ok) throw new Error("Erro ao cancelar plano");
 }

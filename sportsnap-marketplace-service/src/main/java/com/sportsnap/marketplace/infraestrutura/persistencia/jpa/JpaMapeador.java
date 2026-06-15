@@ -80,7 +80,7 @@ class JpaMapeador {
 
     LicencaDeImagem paraDominio(LicencaDeImagemJpa jpa) {
         return new LicencaDeImagem(new LicencaId(jpa.id), new AtletaId(jpa.atletaId),
-            new FotoId(jpa.fotoId), new Dinheiro(jpa.preco), jpa.adquiridaEm, jpa.cancelada);
+            new FotoId(jpa.fotoId), new Dinheiro(jpa.preco), jpa.adquiridaEm, jpa.cancelada, jpa.adquiridaViaCota);
     }
 
     LicencaDeImagemJpa paraJpa(LicencaDeImagem dominio) {
@@ -93,6 +93,7 @@ class JpaMapeador {
         jpa.preco = dominio.getPreco().getValor();
         jpa.adquiridaEm = dominio.getAdquiridaEm();
         jpa.cancelada = dominio.isCancelada();
+        jpa.adquiridaViaCota = dominio.isAdquiridaViaCota();
         return jpa;
     }
 
