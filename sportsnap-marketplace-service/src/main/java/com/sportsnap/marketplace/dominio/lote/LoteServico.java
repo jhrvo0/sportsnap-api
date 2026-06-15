@@ -48,4 +48,15 @@ public class LoteServico {
         lote.arquivar();
         repositorio.salvar(lote);
     }
+
+    public void desarquivar(LoteId id) {
+        var lote = obter(id);
+        lote.desarquivar();
+        repositorio.salvar(lote);
+    }
+
+    public void excluir(LoteId id) {
+        obter(id); // valida existência
+        repositorio.remover(id);
+    }
 }

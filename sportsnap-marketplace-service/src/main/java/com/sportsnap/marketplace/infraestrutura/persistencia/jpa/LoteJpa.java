@@ -65,6 +65,12 @@ class LoteRepositorioImpl implements LoteRepositorio {
 
     @Transactional
     @Override
+    public void remover(LoteId id) {
+        repositorio.deleteById(id.getId());
+    }
+
+    @Transactional
+    @Override
     public void limpar() {
         repositorio.deleteAll();
     }

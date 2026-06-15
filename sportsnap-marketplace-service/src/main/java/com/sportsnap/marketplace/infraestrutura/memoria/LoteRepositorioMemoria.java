@@ -46,6 +46,11 @@ public class LoteRepositorioMemoria implements LoteRepositorio {
     }
 
     @Override
+    public void remover(LoteId id) {
+        armazem.remove(id.getId());
+    }
+
+    @Override
     public void limpar() {
         armazem.clear();
         sequencia.set(1);

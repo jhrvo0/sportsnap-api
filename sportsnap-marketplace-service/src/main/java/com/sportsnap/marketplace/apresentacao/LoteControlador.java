@@ -4,9 +4,11 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -46,9 +48,25 @@ public class LoteControlador {
         return toDto(lote);
     }
 
+    @PutMapping("/{id}")
+    public LoteDto editar(@PathVariable int id, @RequestBody LoteEditDto dto) {
+        loteServico.editarDescricao(new LoteId(id), dto.descricao);
+        return toDto(loteServico.obter(new LoteId(id)));
+    }
+
     @PostMapping("/{id}/arquivar")
     public void arquivar(@PathVariable int id) {
         loteServico.arquivar(new LoteId(id));
+    }
+
+    @PostMapping("/{id}/desarquivar")
+    public void desarquivar(@PathVariable int id) {
+        loteServico.desarquivar(new LoteId(id));
+    }
+
+    @DeleteMapping("/{id}")
+    public void excluir(@PathVariable int id) {
+        loteServico.excluir(new LoteId(id));
     }
 
     private LoteDto toDto(Lote l) {
@@ -67,6 +85,10 @@ public class LoteControlador {
         public int fotografoId;
         public int sessaoId;
         public int spotId;
+        public String descricao;
+    }
+
+    public static class LoteEditDto {
         public String descricao;
     }
 

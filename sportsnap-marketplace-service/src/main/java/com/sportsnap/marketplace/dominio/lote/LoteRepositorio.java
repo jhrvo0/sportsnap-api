@@ -13,5 +13,7 @@ public interface LoteRepositorio {
 
     List<Lote> listarPorFotografo(FotografoId fotografoId);
 
+    void remover(LoteId id);
+
     void limpar();
 }

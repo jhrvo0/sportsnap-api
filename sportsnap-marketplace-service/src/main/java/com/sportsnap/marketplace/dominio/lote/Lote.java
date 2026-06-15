@@ -95,4 +95,11 @@ public class Lote {
         }
         this.arquivado = true;
     }
+
+    public void desarquivar() {
+        if (!arquivado) {
+            throw new IllegalStateException("O Lote nao esta arquivado");
+        }
+        this.arquivado = false;
+    }
 }
