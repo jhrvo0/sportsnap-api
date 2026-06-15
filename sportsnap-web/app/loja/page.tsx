@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { listarTodasFotos, comprarLicenca, type FotoDto } from "@/lib/marketplace";
+import { listarTodasFotos, comprarLicenca, favoritar, desfavoritar, listarFavoritos, type FotoDto } from "@/lib/marketplace";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
@@ -16,6 +16,7 @@ export default function LojaPage() {
   const router = useRouter();
 
   const [fotos, setFotos] = useState<FotoDto[]>([]);
+  const [favoritosIds, setFavoritosIds] = useState<Set<number>>(new Set());
   const [aviso, setAviso] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
   const [comprandoId, setComprandoId] = useState<number | null>(null);
@@ -24,11 +25,26 @@ export default function LojaPage() {
     if (carregando) return;
     if (!sessao) { router.replace("/login"); return; }
     if (sessao.role !== "atleta") { router.replace("/perfil"); return; }
-    // Busca fotos só depois da auth estar resolvida
     listarTodasFotos()
       .then(setFotos)
       .catch(() => setErro("Não foi possível carregar as fotos. O backend está rodando?"));
+    listarFavoritos(sessao.id)
+      .then(favs => setFavoritosIds(new Set(favs.map(f => f.id))))
+      .catch(() => {});
   }, [sessao, carregando]);
+
+  async function toggleFavorito(fotoId: number) {
+    if (!sessao) return;
+    try {
+      if (favoritosIds.has(fotoId)) {
+        await desfavoritar(sessao.id, fotoId);
+        setFavoritosIds(prev => { const n = new Set(prev); n.delete(fotoId); return n; });
+      } else {
+        await favoritar(sessao.id, fotoId);
+        setFavoritosIds(prev => new Set(prev).add(fotoId));
+      }
+    } catch { setErro("Erro ao atualizar favorito."); }
+  }
 
   async function comprar(fotoId: number) {
     if (!sessao) return;
@@ -108,9 +124,18 @@ export default function LojaPage() {
               <div className="p-7">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-bold text-ink-900">Foto #{f.id}</h3>
-                  <div className="text-right">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-ink-400">Preço</p>
-                    <p className="text-2xl font-black text-ink-900">R$ 29,90</p>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => toggleFavorito(f.id)}
+                      className="text-xl transition-transform hover:scale-125"
+                      title={favoritosIds.has(f.id) ? "Desfavoritar" : "Favoritar"}
+                    >
+                      {favoritosIds.has(f.id) ? "❤️" : "🤍"}
+                    </button>
+                    <div className="text-right">
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-ink-400">Preço</p>
+                      <p className="text-2xl font-black text-ink-900">R$ 29,90</p>
+                    </div>
                   </div>
                 </div>
                 <Button className="w-full" size="lg" onClick={() => comprar(f.id)} disabled={comprandoId === f.id}>
