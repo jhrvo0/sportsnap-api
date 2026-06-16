@@ -8,6 +8,7 @@ const linksAtleta = [
   { href: "/atletas", label: "Dashboard" },
   { href: "/loja", label: "Loja" },
   { href: "/clube", label: "Pass ⭐️" },
+  { href: "/favoritos", label: "Favoritos" },
   { href: "/checkin", label: "Check-in" },
   { href: "/gamificacao", label: "Gamificação" },
   { href: "/ranking", label: "Ranking" },

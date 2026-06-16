@@ -8,6 +8,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Lob;
 import jakarta.persistence.Table;
 import jakarta.transaction.Transactional;
 
@@ -29,7 +30,9 @@ class FotoJpa {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     int id;
     int loteId;
+    @Lob
     String urlPreview;
+    @Lob
     String urlOriginal;
     LocalDateTime exifTimestamp;
     String exifDetalhes;

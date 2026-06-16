@@ -37,13 +37,35 @@ public class FotoServico {
 
         var fotosSalvas = new ArrayList<Foto>();
         for (String caminho : caminhosFotos) {
-            String nome = caminho.substring(caminho.lastIndexOf('/') + 1);
             var exif = extrairExif(caminho);
-            var foto = new Foto(loteId, "preview_" + nome, caminho, exif);
+            var foto = new Foto(loteId, "preview_" + caminho, caminho, exif);
             fotosSalvas.add(repositorio.salvar(foto));
         }
         return fotosSalvas;
     }
+
+    public List<Foto> uploadEmLoteComPreview(LoteId loteId, List<FotoUpload> fotos) {
+        notNull(loteId, "O id do Lote nao pode ser nulo");
+        notNull(fotos, "A lista de fotos nao pode ser nula");
+        notEmpty(fotos, "A lista de fotos nao pode estar vazia");
+
+        Lote lote = loteRepositorio.obter(loteId)
+            .orElseThrow(() -> new IllegalArgumentException("Lote nao encontrado: " + loteId));
+
+        if (lote.isArquivado()) {
+            throw new IllegalStateException("Lote arquivado nao aceita novas fotos");
+        }
+
+        var fotosSalvas = new ArrayList<Foto>();
+        for (FotoUpload item : fotos) {
+            var exif = extrairExif(item.nome());
+            var foto = new Foto(loteId, item.urlPreview(), item.nome(), exif);
+            fotosSalvas.add(repositorio.salvar(foto));
+        }
+        return fotosSalvas;
+    }
+
+    public record FotoUpload(String nome, String urlPreview) {}
 
     public Foto obter(FotoId id) {
         notNull(id, "O id da Foto nao pode ser nulo");

@@ -46,7 +46,10 @@ public class FotoControlador {
 
     @PostMapping
     public List<FotoDto> upload(@RequestBody UploadDto dto) {
-        return fotoServico.uploadEmLote(new LoteId(dto.loteId), dto.caminhos).stream()
+        var uploads = dto.fotos.stream()
+            .map(f -> new FotoServico.FotoUpload(f.nome, f.urlPreview))
+            .toList();
+        return fotoServico.uploadEmLoteComPreview(new LoteId(dto.loteId), uploads).stream()
             .map(this::toDto)
             .toList();
     }
@@ -71,7 +74,12 @@ public class FotoControlador {
 
     public static class UploadDto {
         public int loteId;
-        public List<String> caminhos;
+        public List<FotoItem> fotos;
+
+        public static class FotoItem {
+            public String nome;
+            public String urlPreview;
+        }
     }
 
     public record FotoDto(

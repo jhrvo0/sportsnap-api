@@ -127,6 +127,40 @@ export async function getDashboard(fotografoId: number): Promise<DashboardDto> {
   return r.json();
 }
 
+// ─── Favoritos ────────────────────────────────────────────────────────────────
+
+export type FavoritoFotoDto = {
+  id: number;
+  loteId: number;
+  urlPreview: string;
+  exifTimestamp: string;
+  licenciada: boolean;
+};
+
+export async function favoritar(atletaId: number, fotoId: number): Promise<void> {
+  const r = await fetch(`${BASE}/favoritos`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ atletaId, fotoId }),
+  });
+  if (!r.ok) throw new Error("Erro ao favoritar foto");
+}
+
+export async function desfavoritar(atletaId: number, fotoId: number): Promise<void> {
+  const r = await fetch(`${BASE}/favoritos`, {
+    method: "DELETE",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ atletaId, fotoId }),
+  });
+  if (!r.ok) throw new Error("Erro ao desfavoritar foto");
+}
+
+export async function listarFavoritos(atletaId: number): Promise<FavoritoFotoDto[]> {
+  const r = await fetch(`${BASE}/favoritos/${atletaId}`);
+  if (!r.ok) throw new Error("Erro ao listar favoritos");
+  return r.json();
+}
+
 // ─── Licenças ────────────────────────────────────────────────────────────────
 
 export type LicencaDto = {

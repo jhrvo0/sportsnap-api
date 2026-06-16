@@ -39,8 +39,9 @@ public class MarketplaceApplication {
     }
 
     @Bean
-    public LoteServico loteServico(LoteRepositorio repositorio, FotografoRepositorio fotografoRepositorio) {
-        return new LoteServico(repositorio, fotografoRepositorio);
+    public LoteServico loteServico(LoteRepositorio repositorio, FotografoRepositorio fotografoRepositorio,
+                                   com.sportsnap.marketplace.dominio.foto.FotoRepositorio fotoRepositorio) {
+        return new LoteServico(repositorio, fotografoRepositorio, fotoRepositorio);
     }
 
     @Bean
