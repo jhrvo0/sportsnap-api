@@ -50,16 +50,32 @@ public class MarketplaceApplication {
     }
 
     @Bean
-    public FotoServicoAplicacao fotoServicoAplicacao(FotoRepositorioAplicacao repositorio) {
-        return new FotoServicoAplicacao(repositorio);
+    public com.sportsnap.marketplace.dominio.assinatura.AssinaturaRepositorio assinaturaRepositorio() {
+        return new com.sportsnap.marketplace.infraestrutura.memoria.AssinaturaRepositorioEmMemoria();
+    }
+
+    @Bean
+    public com.sportsnap.marketplace.dominio.assinatura.AssinaturaServico assinaturaServico(
+            com.sportsnap.marketplace.dominio.assinatura.AssinaturaRepositorio assinaturaRepositorio,
+            LicencaRepositorio licencaRepositorio,
+            SplitRepositorio splitRepositorio,
+            FotoRepositorio fotoRepositorio) {
+        return new com.sportsnap.marketplace.dominio.assinatura.AssinaturaServico(
+            assinaturaRepositorio, licencaRepositorio, splitRepositorio, fotoRepositorio);
     }
 
     @Bean
     public VendaServico vendaServico(LicencaRepositorio licencaRepositorio,
-                                      SplitRepositorio splitRepositorio,
-                                      FotoRepositorio fotoRepositorio,
-                                      EventoBarramento barramento) {
-        return new VendaServico(licencaRepositorio, splitRepositorio, fotoRepositorio, barramento);
+                                     SplitRepositorio splitRepositorio,
+                                     FotoRepositorio fotoRepositorio,
+                                     EventoBarramento barramento,
+                                     com.sportsnap.marketplace.dominio.assinatura.AssinaturaServico assinaturaServico) {
+        return new VendaServico(licencaRepositorio, splitRepositorio, fotoRepositorio, barramento, assinaturaServico);
+    }
+
+    @Bean
+    public FotoServicoAplicacao fotoServicoAplicacao(FotoRepositorioAplicacao repositorio) {
+        return new FotoServicoAplicacao(repositorio);
     }
 
     @Bean
@@ -75,7 +91,8 @@ public class MarketplaceApplication {
     @Bean
     public MotorSugestaoServico motorSugestaoServico(FotoRepositorio fotoRepositorio,
                                                       LicencaRepositorio licencaRepositorio,
-                                                      FavoritoRepositorio favoritoRepositorio) {
-        return new MotorSugestaoServico(fotoRepositorio, licencaRepositorio, favoritoRepositorio);
+                                                      FavoritoRepositorio favoritoRepositorio,
+                                                      LoteRepositorio loteRepositorio) {
+        return new MotorSugestaoServico(fotoRepositorio, licencaRepositorio, favoritoRepositorio, loteRepositorio);
     }
 }

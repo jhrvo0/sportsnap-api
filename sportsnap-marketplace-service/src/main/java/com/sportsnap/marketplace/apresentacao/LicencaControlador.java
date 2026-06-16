@@ -51,8 +51,13 @@ public class LicencaControlador {
     }
 
     @PostMapping("/{id}/cancelar")
-    public void cancelar(@PathVariable int id) {
-        vendaServico.cancelar(new LicencaId(id));
+    public org.springframework.http.ResponseEntity<String> cancelar(@PathVariable int id) {
+        try {
+            vendaServico.cancelar(new LicencaId(id));
+            return org.springframework.http.ResponseEntity.ok().build();
+        } catch (IllegalStateException e) {
+            return org.springframework.http.ResponseEntity.badRequest().body(e.getMessage());
+        }
     }
 
     private LicencaDto toDto(LicencaDeImagem l) {

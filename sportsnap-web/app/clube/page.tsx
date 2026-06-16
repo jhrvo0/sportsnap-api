@@ -1,0 +1,149 @@
+"use client";
+
+import { useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth";
+import { obterAssinatura, assinarPlano, cancelarAssinatura, AssinaturaDto } from "@/lib/marketplace";
+
+export default function ClubeAssinatura() {
+  const { sessao } = useAuth();
+  const [assinatura, setAssinatura] = useState<AssinaturaDto | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [loadingAcao, setLoadingAcao] = useState(false);
+
+  useEffect(() => {
+    if (sessao) carregarAssinatura();
+  }, [sessao]);
+
+  async function carregarAssinatura() {
+    if (!sessao) return;
+    setLoading(true);
+    try {
+      const ass = await obterAssinatura(sessao.id);
+      setAssinatura(ass);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleAssinar() {
+    if (!sessao) return;
+    if (!confirm("Deseja assinar o SportSnap Pass por R$ 99,90/mês?")) return;
+    setLoadingAcao(true);
+    try {
+      const novaAss = await assinarPlano(sessao.id);
+      setAssinatura(novaAss);
+      alert("Assinatura realizada com sucesso! Você ganhou 10 cotas.");
+    } catch (e) {
+      alert("Erro ao assinar.");
+    } finally {
+      setLoadingAcao(false);
+    }
+  }
+
+  async function handleCancelar() {
+    if (!sessao) return;
+    if (!confirm("Tem certeza que deseja cancelar sua assinatura? Você não receberá novas cotas no próximo ciclo.")) return;
+    setLoadingAcao(true);
+    try {
+      await cancelarAssinatura(sessao.id);
+      await carregarAssinatura();
+      alert("Assinatura cancelada.");
+    } catch (e) {
+      alert("Erro ao cancelar.");
+    } finally {
+      setLoadingAcao(false);
+    }
+  }
+
+  if (loading) {
+    return <div className="p-8">Carregando Clube...</div>;
+  }
+
+  return (
+    <div className="p-8 max-w-4xl mx-auto text-slate-800">
+      <h1 className="text-4xl font-black mb-2 text-slate-900">SportSnap Pass 🏆</h1>
+      <p className="text-lg text-slate-600 mb-8">
+        Faça parte do clube exclusivo, receba pacotes mensais de fotos e apoie seus fotógrafos favoritos.
+      </p>
+
+      {assinatura && assinatura.status !== "INATIVA" ? (
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 p-8 rounded-2xl text-white shadow-xl">
+          <div className="flex justify-between items-start mb-6">
+            <div>
+              <h2 className="text-2xl font-bold mb-1">Seu Plano está Ativo</h2>
+              <p className="text-indigo-100">
+                Você é um membro VIP. Ciclo encerra em: {new Date(assinatura.dataFimCiclo).toLocaleDateString()}
+              </p>
+            </div>
+            <div className="text-right">
+              <div className="text-sm uppercase tracking-wide text-indigo-200">Saldo de Cotas</div>
+              <div className="text-5xl font-black">{assinatura.saldoCotas}</div>
+            </div>
+          </div>
+
+          <div className="bg-white/10 rounded-xl p-4 mb-6">
+            <h3 className="font-semibold mb-2">💡 Como funciona:</h3>
+            <ul className="list-disc pl-5 space-y-1 text-sm text-indigo-50">
+              <li>Cada cota permite baixar 1 foto em alta resolução na loja, sem custo adicional.</li>
+              <li>No fim do mês, o valor da sua assinatura é rateado entre os fotógrafos que você apoiou com suas cotas.</li>
+              <li>Cotas não usadas acumulam para o próximo mês (Rollover de até 2x a franquia mensal).</li>
+            </ul>
+          </div>
+
+          {assinatura.status === "CANCELADA_PENDENTE" ? (
+            <div className="bg-yellow-500/20 text-yellow-200 p-3 rounded-lg border border-yellow-500/50 text-sm">
+              Sua assinatura está cancelada, mas você ainda pode usar suas cotas até o final do ciclo atual.
+            </div>
+          ) : (
+            <button
+              onClick={handleCancelar}
+              disabled={loadingAcao}
+              className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-lg transition-colors border border-white/20"
+            >
+              {loadingAcao ? "Cancelando..." : "Cancelar Assinatura"}
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100 text-center">
+          <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
+            ⭐️
+          </div>
+          <h2 className="text-3xl font-bold mb-4">Assine o SportSnap Pass</h2>
+          <div className="text-5xl font-black text-slate-900 mb-6">
+            R$ 99,90<span className="text-lg text-slate-500 font-normal">/mês</span>
+          </div>
+
+          <ul className="text-left max-w-md mx-auto space-y-4 mb-8">
+            <li className="flex items-center gap-3">
+              <span className="text-green-500">✅</span>
+              <span><strong>10 fotos mensais</strong> inclusas na franquia</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="text-green-500">✅</span>
+              <span><strong>Rollover de cotas:</strong> não perdeu, acumulou!</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="text-green-500">✅</span>
+              <span><strong>Acesso Antecipado VIP:</strong> veja as fotos antes de todos</span>
+            </li>
+            <li className="flex items-center gap-3">
+              <span className="text-green-500">✅</span>
+              <span><strong>Apoie diretamente:</strong> seu dinheiro vai para quem você baixar</span>
+            </li>
+          </ul>
+
+          <button
+            onClick={handleAssinar}
+            disabled={loadingAcao}
+            className="w-full max-w-md mx-auto bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all"
+          >
+            {loadingAcao ? "Processando..." : "Assinar Agora e Ganhar 10 Cotas"}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}

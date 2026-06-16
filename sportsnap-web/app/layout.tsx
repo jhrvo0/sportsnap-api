@@ -1,6 +1,7 @@
 import "./globals.css";
 import { Navbar } from "@/components/Navbar";
 import { AuthProvider } from "@/lib/auth";
+import { CartProvider } from "@/lib/cart";
 
 export const metadata = {
   title: "SportSnap",
@@ -21,13 +22,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="bg-ink-50 text-ink-900">
         <AuthProvider>
-          <Navbar />
-          <main className="mx-auto max-w-6xl px-6 py-12">{children}</main>
+          <CartProvider>
+            <Navbar />
+            <main className="mx-auto max-w-6xl px-6 py-12">{children}</main>
+
           <footer className="border-t border-ink-100 py-10">
             <div className="mx-auto max-w-6xl px-6 text-[12px] text-ink-400">
               SportSnap · Ecossistema de performance esportiva e fotografia profissional
             </div>
           </footer>
+          </CartProvider>
         </AuthProvider>
       </body>
     </html>

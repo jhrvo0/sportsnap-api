@@ -13,9 +13,10 @@ public class ResumoFotografo {
     private final int totalVendas;
     private final Dinheiro receitaBruta;
     private final Dinheiro saldoDisponivel;
+    private final Dinheiro saldoPendente;
 
     public ResumoFotografo(FotografoId fotografoId, int totalLotes, int totalFotos,
-                            int totalVendas, Dinheiro receitaBruta, Dinheiro saldoDisponivel) {
+                            int totalVendas, Dinheiro receitaBruta, Dinheiro saldoDisponivel, Dinheiro saldoPendente) {
         notNull(fotografoId, "O id do Fotografo nao pode ser nulo");
         notNull(receitaBruta, "A receita bruta nao pode ser nula");
         notNull(saldoDisponivel, "O saldo disponivel nao pode ser nulo");
@@ -25,6 +26,7 @@ public class ResumoFotografo {
         this.totalVendas = totalVendas;
         this.receitaBruta = receitaBruta;
         this.saldoDisponivel = saldoDisponivel;
+        this.saldoPendente = saldoPendente;
     }
 
     public FotografoId getFotografoId() {
@@ -49,5 +51,9 @@ public class ResumoFotografo {
 
     public Dinheiro getSaldoDisponivel() {
         return saldoDisponivel;
+    }
+
+    public Dinheiro getSaldoPendente() {
+        return saldoPendente;
     }
 }

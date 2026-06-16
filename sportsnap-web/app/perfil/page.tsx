@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { db } from "@/lib/db";
 import { useAuth } from "@/lib/auth";
 import { type Foto, type Licenca } from "@/lib/api";
-import { getDashboard, listarFotos, listarLotes, removerFoto, type DashboardDto, type FotoDto } from "@/lib/marketplace";
+import { getDashboard, listarFotos, listarLotes, removerFoto, listarLicencas, cancelarLicenca as cancelarLicencaApi, type DashboardDto, type FotoDto, type LicencaDto } from "@/lib/marketplace";
 import { Card } from "@/components/Card";
 import { Badge } from "@/components/Badge";
 import { Button } from "@/components/Button";
@@ -15,9 +15,8 @@ export default function PerfilPage() {
   const { sessao, carregando } = useAuth();
   const router = useRouter();
 
-  // Estado do atleta (localStorage — não mudamos essa parte)
-  const [licencas, setLicencas] = useState<Licenca[]>([]);
-  const [fotosAtleta, setFotosAtleta] = useState<Foto[]>([]);
+  // Estado do atleta (agora vindo do backend real)
+  const [licencas, setLicencas] = useState<LicencaDto[]>([]);
 
   // Estado do fotógrafo (backend real)
   const [dashboard, setDashboard] = useState<DashboardDto | null>(null);
@@ -34,12 +33,21 @@ export default function PerfilPage() {
     if (!sessao) return;
     setErro(null);
     if (sessao.role === "atleta") {
-      setLicencas(db.filter("licencas", l => l.atletaId === sessao.id));
-      setFotosAtleta(db.get("fotos"));
+      carregarLicencasAtleta();
     } else {
       carregarDadosFotografo();
     }
   }, [sessao]);
+
+  async function carregarLicencasAtleta() {
+    if (!sessao) return;
+    try {
+      const lista = await listarLicencas(sessao.id);
+      setLicencas(lista);
+    } catch {
+      setErro("Erro ao carregar suas fotos compradas.");
+    }
+  }
 
   async function carregarDadosFotografo() {
     if (!sessao) return;
@@ -58,11 +66,15 @@ export default function PerfilPage() {
     }
   }
 
-  function cancelarLicenca(id: number) {
+  async function cancelarLicenca(id: number) {
     if (confirm("Tem certeza que deseja cancelar esta licença? O valor será reembolsado.")) {
-      db.update("licencas", id, { cancelada: true });
-      setAviso(`Licença #${id} cancelada com sucesso.`);
-      setLicencas(db.filter("licencas", l => l.atletaId === sessao!.id));
+      try {
+        await cancelarLicencaApi(id);
+        setAviso(`Licença #${id} cancelada e reembolsada com sucesso.`);
+        carregarLicencasAtleta();
+      } catch {
+        setErro("Erro ao cancelar a licença.");
+      }
     }
   }
 
@@ -79,7 +91,6 @@ export default function PerfilPage() {
 
   const ativas = licencas.filter(l => !l.cancelada);
   const totalGasto = ativas.reduce((acc, l) => acc + Number(l.preco), 0);
-  const fotosMap = new Map(fotosAtleta.map(f => [f.id, f]));
 
   return (
     <div className="fade-up">
@@ -159,7 +170,13 @@ export default function PerfilPage() {
                         </div>
                         <div className="flex gap-2">
                           {!l.cancelada && <Button variant="secondary" size="sm" className="flex-1">Baixar Original</Button>}
-                          {!l.cancelada && <Button variant="ghost" size="sm" className="text-rose-500" onClick={() => cancelarLicenca(l.id)}>Devolver</Button>}
+                          {!l.cancelada && (
+                            new Date(l.adquiridaEm).getTime() + 7 * 24 * 60 * 60 * 1000 > Date.now() ? (
+                              <Button variant="ghost" size="sm" className="text-rose-500" onClick={() => cancelarLicenca(l.id)}>Solicitar Reembolso</Button>
+                            ) : (
+                              <span className="text-[10px] text-ink-400 mt-2">Garantia expirada</span>
+                            )
+                          )}
                         </div>
                       </div>
                     </div>
@@ -188,8 +205,11 @@ export default function PerfilPage() {
               <p className="text-4xl font-black">{dashboard?.totalVendas ?? "—"}</p>
               <p className="text-ink-400 text-sm mt-1">licenças ativas</p>
             </div>
-            <div className="rounded-[2rem] bg-gradient-to-br from-accent to-violet-600 text-white p-6 shadow-xl">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mb-2">Saldo (70%)</p>
+            <div className="rounded-[2rem] bg-gradient-to-br from-accent to-violet-600 text-white p-6 shadow-xl relative overflow-hidden">
+              <div className="absolute top-4 right-4 bg-white/20 backdrop-blur px-2 py-1 rounded-md text-[10px] font-bold">
+                Pendente: R$ {dashboard ? Number(dashboard.saldoPendente).toFixed(2).replace(".", ",") : "—"}
+              </div>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-white/70 mb-2">Saldo Disponível</p>
               <p className="text-4xl font-black">
                 R$ {dashboard ? Number(dashboard.saldoDisponivel).toFixed(2).replace(".", ",") : "—"}
               </p>

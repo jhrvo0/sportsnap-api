@@ -15,6 +15,7 @@ public class LicencaDeImagem {
     private final Dinheiro preco;
     private final LocalDateTime adquiridaEm;
     private boolean cancelada;
+    private boolean adquiridaViaCota;
 
     public LicencaDeImagem(AtletaId atletaId, FotoId fotoId, Dinheiro preco) {
         id = null;
@@ -23,6 +24,17 @@ public class LicencaDeImagem {
         this.preco = validarPreco(preco);
         this.adquiridaEm = LocalDateTime.now();
         this.cancelada = false;
+        this.adquiridaViaCota = false;
+    }
+
+    public LicencaDeImagem(AtletaId atletaId, FotoId fotoId, Dinheiro preco, boolean adquiridaViaCota) {
+        id = null;
+        this.atletaId = validarAtleta(atletaId);
+        this.fotoId = validarFoto(fotoId);
+        this.preco = validarPreco(preco);
+        this.adquiridaEm = LocalDateTime.now();
+        this.cancelada = false;
+        this.adquiridaViaCota = adquiridaViaCota;
     }
 
     public LicencaDeImagem(LicencaId id, AtletaId atletaId, FotoId fotoId, Dinheiro preco,
@@ -35,6 +47,20 @@ public class LicencaDeImagem {
         notNull(adquiridaEm, "A data de aquisicao nao pode ser nula");
         this.adquiridaEm = adquiridaEm;
         this.cancelada = cancelada;
+        this.adquiridaViaCota = false;
+    }
+
+    public LicencaDeImagem(LicencaId id, AtletaId atletaId, FotoId fotoId, Dinheiro preco,
+                            LocalDateTime adquiridaEm, boolean cancelada, boolean adquiridaViaCota) {
+        notNull(id, "O id da Licenca nao pode ser nulo");
+        this.id = id;
+        this.atletaId = validarAtleta(atletaId);
+        this.fotoId = validarFoto(fotoId);
+        this.preco = validarPreco(preco);
+        notNull(adquiridaEm, "A data de aquisicao nao pode ser nula");
+        this.adquiridaEm = adquiridaEm;
+        this.cancelada = cancelada;
+        this.adquiridaViaCota = adquiridaViaCota;
     }
 
     private AtletaId validarAtleta(AtletaId id) {
@@ -74,6 +100,10 @@ public class LicencaDeImagem {
 
     public boolean isCancelada() {
         return cancelada;
+    }
+
+    public boolean isAdquiridaViaCota() {
+        return adquiridaViaCota;
     }
 
     public void cancelar(LocalDateTime agora) {

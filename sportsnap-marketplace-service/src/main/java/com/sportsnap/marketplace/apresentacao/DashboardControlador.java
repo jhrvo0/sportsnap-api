@@ -26,7 +26,8 @@ public class DashboardControlador {
             resumo.getTotalFotos(),
             resumo.getTotalVendas(),
             resumo.getReceitaBruta().getValor(),
-            resumo.getSaldoDisponivel().getValor()
+            resumo.getSaldoDisponivel().getValor(),
+            resumo.getSaldoPendente().getValor()
         );
     }
 
@@ -36,6 +37,7 @@ public class DashboardControlador {
         int totalFotos,
         int totalVendas,
         BigDecimal receitaBruta,
-        BigDecimal saldoDisponivel
+        BigDecimal saldoDisponivel,
+        BigDecimal saldoPendente
     ) {}
 }

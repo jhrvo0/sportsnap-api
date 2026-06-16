@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { useCart } from "@/lib/cart";
+// Merged the duplicated imports into one clean line
 import { listarTodasFotos, comprarLicenca, favoritar, desfavoritar, listarFavoritos, type FotoDto } from "@/lib/marketplace";
 import { PageHeader } from "@/components/PageHeader";
 import { Badge } from "@/components/Badge";
@@ -13,26 +15,29 @@ import { WatermarkedImage } from "@/components/WatermarkedImage";
 
 export default function LojaPage() {
   const { sessao, carregando } = useAuth();
+  const { cart, addToCart } = useCart();
   const router = useRouter();
 
   const [fotos, setFotos] = useState<FotoDto[]>([]);
   const [favoritosIds, setFavoritosIds] = useState<Set<number>>(new Set());
   const [aviso, setAviso] = useState<string | null>(null);
   const [erro, setErro] = useState<string | null>(null);
-  const [comprandoId, setComprandoId] = useState<number | null>(null);
 
   useEffect(() => {
     if (carregando) return;
     if (!sessao) { router.replace("/login"); return; }
     if (sessao.role !== "atleta") { router.replace("/perfil"); return; }
+    
     listarTodasFotos()
       .then(setFotos)
       .catch(() => setErro("Não foi possível carregar as fotos. O backend está rodando?"));
+      
     listarFavoritos(sessao.id)
       .then(favs => setFavoritosIds(new Set(favs.map(f => f.id))))
       .catch(() => {});
-  }, [sessao, carregando]);
+  }, [sessao, carregando, router]);
 
+  // Kept from main: You need this for the heart button
   async function toggleFavorito(fotoId: number) {
     if (!sessao) return;
     try {
@@ -43,51 +48,35 @@ export default function LojaPage() {
         await favoritar(sessao.id, fotoId);
         setFavoritosIds(prev => new Set(prev).add(fotoId));
       }
-    } catch { setErro("Erro ao atualizar favorito."); }
-  }
-
-  async function comprar(fotoId: number) {
-    if (!sessao) return;
-    setComprandoId(fotoId);
-    setAviso(null);
-    setErro(null);
-    try {
-      await comprarLicenca(sessao.id, fotoId);
-      setAviso("Licença adquirida! Esta foto validou seu treino e liberou a Sincronização.");
-      // Recarrega fotos do backend — a comprada vai aparecer como licenciada e sair da loja
-      const atualizadas = await listarTodasFotos();
-      setFotos(atualizadas);
-    } catch {
-      setErro("Erro ao comprar licença.");
-    } finally {
-      setComprandoId(null);
+    } catch { 
+        setErro("Erro ao atualizar favorito."); 
     }
   }
 
+  // Removed `comprar` function here to prevent state errors and favor your new Cart system
+
   if (!sessao && !carregando) return null;
 
-  // Usa o backend como fonte de verdade: foto aparece se não estiver licenciada no servidor
-  const sugestoes = fotos.filter(f => !f.licenciada);
+  const fotosNoCarrinhoIds = new Set(cart.map((item) => item.id));
+  const sugestoes = fotos.filter(f => !f.licenciada && !fotosNoCarrinhoIds.has(f.id));
 
   return (
     <div className="fade-up">
-      <PageHeader
-        eyebrow="Marketplace"
-        title="Fotos Sugeridas"
-        subtitle="O motor de busca encontrou fotos suas baseadas nos seus check-ins."
-      />
+      <div className="flex justify-between items-start mb-6">
+        <PageHeader
+          eyebrow="Marketplace"
+          title="Fotos Sugeridas"
+          subtitle="O motor de busca encontrou fotos suas baseadas nos seus check-ins."
+        />
+        {cart.length > 0 && (
+          <Button onClick={() => router.push("/carrinho")} className="shrink-0 bg-violet-600 hover:bg-violet-700 text-white shadow-lg shadow-violet-500/30">
+            Ver Carrinho ({cart.length})
+          </Button>
+        )}
+      </div>
 
       {erro && <Alert tone="danger" className="mb-6">{erro}</Alert>}
-
-      {aviso && (
-        <div className="mb-8 rounded-[2rem] bg-ink-900 p-6 text-white shadow-xl flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <span className="text-2xl">💎</span>
-            <p className="font-medium">{aviso}</p>
-          </div>
-          <Button size="sm" variant="secondary" onClick={() => router.push("/atletas")}>Ir para Dashboard</Button>
-        </div>
-      )}
+      {aviso && <Alert tone="success" className="mb-6">{aviso}</Alert>}
 
       {sugestoes.length === 0 ? (
         <Card>
@@ -97,7 +86,7 @@ export default function LojaPage() {
             </div>
             <h3 className="text-xl font-bold text-ink-900">Sem fotos no momento</h3>
             <p className="mt-2 text-ink-500 max-w-xs mx-auto">
-              Aguarde os fotógrafos subirem as fotos desta sessão.
+              Aguarde os fotógrafos subirem as fotos desta sessão ou verifique se você já adicionou tudo ao carrinho.
             </p>
           </div>
         </Card>
@@ -138,8 +127,8 @@ export default function LojaPage() {
                     </div>
                   </div>
                 </div>
-                <Button className="w-full" size="lg" onClick={() => comprar(f.id)} disabled={comprandoId === f.id}>
-                  {comprandoId === f.id ? "Validando..." : "Comprar Licença"}
+                <Button className="w-full" size="lg" onClick={() => addToCart(f)}>
+                  Adicionar ao Carrinho
                 </Button>
                 <p className="mt-4 text-center text-[11px] text-ink-400">
                   Inclui Split Financeiro (70% Fotógrafo / 30% Plataforma)

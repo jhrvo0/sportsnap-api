@@ -49,7 +49,9 @@ public class DashboardServico {
         int totalFotos = 0;
         int totalVendas = 0;
         Dinheiro receita = Dinheiro.ZERO;
-        Dinheiro saldo = Dinheiro.ZERO;
+        Dinheiro saldoDisponivel = Dinheiro.ZERO;
+        Dinheiro saldoPendente = Dinheiro.ZERO;
+        java.time.LocalDateTime agora = java.time.LocalDateTime.now();
 
         for (Lote lote : lotes) {
             var fotos = fotoRepositorio.listarPorLote(lote.getId());
@@ -64,12 +66,16 @@ public class DashboardServico {
                     receita = receita.somar(licenca.getPreco());
                     var split = splitRepositorio.obterPorLicenca(licenca.getId());
                     if (split.isPresent()) {
-                        saldo = saldo.somar(split.get().getValorFotografo());
+                        if (agora.isAfter(licenca.getAdquiridaEm().plusDays(7))) {
+                            saldoDisponivel = saldoDisponivel.somar(split.get().getValorFotografo());
+                        } else {
+                            saldoPendente = saldoPendente.somar(split.get().getValorFotografo());
+                        }
                     }
                 }
             }
         }
 
-        return new ResumoFotografo(fotografoId, lotes.size(), totalFotos, totalVendas, receita, saldo);
+        return new ResumoFotografo(fotografoId, lotes.size(), totalFotos, totalVendas, receita, saldoDisponivel, saldoPendente);
     }
 }
