@@ -55,7 +55,7 @@ export default function FotosPage() {
                   )}
                 </div>
                 <p className="mt-1 text-[12px] text-ink-500">
-                  Lote #{f.loteId} · {new Date(f.exifTimestamp).toLocaleString("pt-BR")}
+                  Álbum #{f.loteId} · {new Date(f.exifTimestamp).toLocaleString("pt-BR")}
                 </p>
               </div>
             </article>

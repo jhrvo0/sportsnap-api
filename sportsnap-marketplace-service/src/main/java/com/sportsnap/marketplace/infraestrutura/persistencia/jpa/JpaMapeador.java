@@ -59,8 +59,9 @@ class JpaMapeador {
 
     Foto paraDominio(FotoJpa jpa) {
         var exif = new MetadadosExif(jpa.exifTimestamp, jpa.exifDetalhes);
+        var preco = jpa.preco != null ? new Dinheiro(jpa.preco) : null;
         return new Foto(new FotoId(jpa.id), new LoteId(jpa.loteId),
-            jpa.urlPreview, jpa.urlOriginal, exif, jpa.licenciada, jpa.removida);
+            jpa.urlPreview, jpa.urlOriginal, exif, jpa.licenciada, jpa.removida, preco, jpa.disponivel);
     }
 
     FotoJpa paraJpa(Foto dominio) {
@@ -75,6 +76,8 @@ class JpaMapeador {
         jpa.exifDetalhes = dominio.getExif().getDetalhes();
         jpa.licenciada = dominio.isLicenciada();
         jpa.removida = dominio.isRemovida();
+        jpa.preco = dominio.getPreco().getValor();
+        jpa.disponivel = dominio.isDisponivel();
         return jpa;
     }
 

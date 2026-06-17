@@ -17,7 +17,7 @@ const linksAtleta = [
 ];
 
 const linksFotografo = [
-  { href: "/lotes", label: "Meus Lotes" },
+  { href: "/lotes", label: "Meus Álbuns" },
   { href: "/upload", label: "Upload" },
   { href: "/spots", label: "Spots" },
   { href: "/sessoes", label: "Sessões" },

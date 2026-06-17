@@ -56,7 +56,7 @@ export default function Home() {
         <FeatureCard
           tone="violet"
           title="Marketplace"
-          desc="Fotógrafos profissionais publicam lotes. Atletas adquirem licenças e desbloqueiam novas cartas."
+          desc="Fotógrafos profissionais publicam álbuns. Atletas adquirem licenças e desbloqueiam novas cartas."
         />
         <FeatureCard
           tone="amber"
@@ -76,7 +76,7 @@ export default function Home() {
         <RoleCta
           eyebrow="Para Fotógrafos"
           title="Monetize cada clique."
-          desc="Publique lotes vinculados a sessões e spots. Receba split financeiro automático em cada licença vendida."
+          desc="Publique álbuns vinculados a sessões e spots. Receba split financeiro automático em cada licença vendida."
           href="/login"
           cta="Entrar como Fotógrafo"
         />

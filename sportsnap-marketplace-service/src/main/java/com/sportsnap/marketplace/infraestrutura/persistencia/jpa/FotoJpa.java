@@ -1,5 +1,6 @@
 package com.sportsnap.marketplace.infraestrutura.persistencia.jpa;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -38,6 +39,8 @@ class FotoJpa {
     String exifDetalhes;
     boolean licenciada;
     boolean removida;
+    BigDecimal preco;
+    boolean disponivel;
 }
 
 interface FotoJpaRepository extends JpaRepository<FotoJpa, Integer> {

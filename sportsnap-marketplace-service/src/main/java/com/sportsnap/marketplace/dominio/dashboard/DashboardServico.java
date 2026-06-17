@@ -55,7 +55,8 @@ public class DashboardServico {
 
         for (Lote lote : lotes) {
             var fotos = fotoRepositorio.listarPorLote(lote.getId());
-            totalFotos += fotos.size();
+            // Conta apenas fotos disponíveis no marketplace (não removidas e disponíveis)
+            totalFotos += fotos.stream().filter(f -> !f.isRemovida() && f.isDisponivel()).count();
 
             for (var foto : fotos) {
                 for (LicencaDeImagem licenca : licencaRepositorio.listarPorFoto(foto.getId())) {

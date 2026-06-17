@@ -1,5 +1,6 @@
 package com.sportsnap.marketplace.apresentacao;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -7,12 +8,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.sportsnap.marketplace.aplicacao.foto.FotoResumo;
 import com.sportsnap.marketplace.aplicacao.foto.FotoServicoAplicacao;
 import com.sportsnap.marketplace.dominio.foto.Foto;
 import com.sportsnap.marketplace.dominio.foto.FotoId;
@@ -59,6 +60,24 @@ public class FotoControlador {
         fotoServico.remover(new FotoId(id));
     }
 
+    @PutMapping("/{id}/preco")
+    public FotoDto definirPreco(@PathVariable int id, @RequestBody PrecoDto dto) {
+        fotoServico.definirPreco(new FotoId(id), dto.preco);
+        return toDto(fotoServico.obter(new FotoId(id)));
+    }
+
+    @PostMapping("/{id}/disponibilizar")
+    public FotoDto disponibilizar(@PathVariable int id) {
+        fotoServico.disponibilizar(new FotoId(id));
+        return toDto(fotoServico.obter(new FotoId(id)));
+    }
+
+    @PostMapping("/{id}/indisponibilizar")
+    public FotoDto indisponibilizar(@PathVariable int id) {
+        fotoServico.indisponibilizar(new FotoId(id));
+        return toDto(fotoServico.obter(new FotoId(id)));
+    }
+
     private FotoDto toDto(Foto f) {
         return new FotoDto(
             f.getId().getId(),
@@ -68,7 +87,9 @@ public class FotoControlador {
             f.getExif().getTimestamp(),
             f.getExif().getDetalhes(),
             f.isLicenciada(),
-            f.isRemovida()
+            f.isRemovida(),
+            f.getPreco().getValor(),
+            f.isDisponivel()
         );
     }
 
@@ -82,6 +103,10 @@ public class FotoControlador {
         }
     }
 
+    public static class PrecoDto {
+        public BigDecimal preco;
+    }
+
     public record FotoDto(
         int id,
         int loteId,
@@ -90,6 +115,8 @@ public class FotoControlador {
         LocalDateTime exifTimestamp,
         String exifDetalhes,
         boolean licenciada,
-        boolean removida
+        boolean removida,
+        BigDecimal preco,
+        boolean disponivel
     ) {}
 }

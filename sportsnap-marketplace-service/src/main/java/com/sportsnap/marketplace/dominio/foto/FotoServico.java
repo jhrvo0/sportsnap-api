@@ -7,6 +7,7 @@ import com.sportsnap.marketplace.dominio.lote.Lote;
 import com.sportsnap.marketplace.dominio.lote.LoteId;
 import com.sportsnap.marketplace.dominio.lote.LoteRepositorio;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,6 +82,26 @@ public class FotoServico {
     public void remover(FotoId id) {
         var foto = obter(id);
         foto.remover();
+        repositorio.salvar(foto);
+    }
+
+    public void definirPreco(FotoId id, BigDecimal novoPreco) {
+        notNull(id, "O id da Foto nao pode ser nulo");
+        notNull(novoPreco, "O preco nao pode ser nulo");
+        var foto = obter(id);
+        foto.definirPreco(novoPreco);
+        repositorio.salvar(foto);
+    }
+
+    public void disponibilizar(FotoId id) {
+        var foto = obter(id);
+        foto.disponibilizar();
+        repositorio.salvar(foto);
+    }
+
+    public void indisponibilizar(FotoId id) {
+        var foto = obter(id);
+        foto.indisponibilizar();
         repositorio.salvar(foto);
     }
 
