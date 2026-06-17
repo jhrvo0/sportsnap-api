@@ -53,4 +53,11 @@ public class SessaoServico {
         sessao.cancelar(LocalDateTime.now());
         repositorio.salvar(sessao);
     }
+
+    public Sessao atualizar(SessaoId id, SpotId spotId, Periodo periodo, String descricao) {
+        notNull(id, "O id da Sessao nao pode ser nulo");
+        var existente = obter(id);
+        var atualizado = new Sessao(existente.getId(), spotId, periodo, descricao, existente.isCancelada());
+        return repositorio.salvar(atualizado);
+    }
 }

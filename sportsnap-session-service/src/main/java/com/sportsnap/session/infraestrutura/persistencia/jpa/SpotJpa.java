@@ -75,6 +75,11 @@ class SpotRepositorioImpl implements SpotRepositorio, SpotRepositorioAplicacao {
     }
 
     @Override
+    public void remover(SpotId id) {
+        repositorio.deleteById(id.getId());
+    }
+
+    @Override
     public List<SpotResumo> pesquisarResumos() {
         return repositorio.findSpotResumoBy();
     }

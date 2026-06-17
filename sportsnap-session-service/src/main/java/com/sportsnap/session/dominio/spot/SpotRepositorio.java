@@ -11,5 +11,7 @@ public interface SpotRepositorio {
 
     List<Spot> listarTodos();
 
+    void remover(SpotId id);
+
     void limpar();
 }

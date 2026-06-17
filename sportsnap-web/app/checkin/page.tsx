@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { db, CheckIn, RegistroAtividade, SportType, MetricaDefinition, CustomMetricaValue } from "@/lib/db";
 import { Sessao, Spot } from "@/lib/api";
+import {
+  registrarAtividade as apiRegistrarAtividade,
+  listarAtividades as apiListarAtividades,
+  atualizarAtividade as apiAtualizarAtividade,
+  RegistroAtividadeDto
+} from "@/lib/atividades";
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/Button";
@@ -14,15 +20,31 @@ import { Badge } from "@/components/Badge";
 import { DynamicMap } from "@/components/DynamicMap";
 import { Modal } from "@/components/Modal";
 import React from "react";
+import { 
+  listarSpots, 
+  listarSessoes, 
+  realizarCheckIn as apiRealizarCheckIn, 
+  listarCheckIns as apiListarCheckIns, 
+  cancelarCheckIn as apiCancelarCheckIn 
+} from "@/lib/spots";
 
 // --- Metric Templates Library ---
 const METRIC_TEMPLATES: MetricaDefinition[] = [
   { id: "waves", label: "Ondas Surfadas", unit: "ondas", sport: "surf" },
-  { id: "max_speed", label: "Velocidade Máxima", unit: "km/h", sport: "custom" },
   { id: "tricks", label: "Manobras Acertadas", unit: "manobras", sport: "skate" },
-  { id: "goals", label: "Gols / Assistências", unit: "gols", sport: "futebol" },
+  { id: "goals", label: "Gols", unit: "gols", sport: "futebol" },
+  { id: "assists", label: "Assistências", unit: "assistências", sport: "futebol" },
   { id: "distance", label: "Distância Percorrida", unit: "km", sport: "corrida" },
   { id: "pace", label: "Pace Médio", unit: "min/km", sport: "corrida" },
+  // Bicicleta
+  { id: "distance_cycling", label: "Distância Pedalada", unit: "km", sport: "bicicleta" },
+  { id: "speed_cycling", label: "Velocidade Média", unit: "km/h", sport: "bicicleta" },
+  // Caminhada
+  { id: "distance_walking", label: "Distância Caminhada", unit: "km", sport: "caminhada" },
+  { id: "elevation_gain", label: "Ganho de Elevação", unit: "m", sport: "caminhada" },
+  // Natação
+  { id: "distance_swimming", label: "Distância Nadada", unit: "m", sport: "natacao" },
+  { id: "laps_swimming", label: "Voltas", unit: "voltas", sport: "natacao" },
 ];
 
 export default function CheckinPage() {
@@ -35,6 +57,7 @@ export default function CheckinPage() {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [atividades, setAtividades] = useState<RegistroAtividade[]>([]);
   const [customMetricasDisponiveis, setCustomMetricasDisponiveis] = useState<MetricaDefinition[]>([]);
+  const [customSports, setCustomSports] = useState<{ id: string; label: string }[]>([]);
 
   // UI States
   const [loading, setLoading] = useState(true);
@@ -56,9 +79,20 @@ export default function CheckinPage() {
   const [novaMetricaLabel, setNovaMetricaLabel] = useState("");
   const [novaMetricaUnit, setNovaMetricaUnit] = useState("");
   const [showAddCustom, setShowAddCustom] = useState(false);
+  const [editAtividadeId, setEditAtividadeId] = useState<number | null>(null);
+
+  // New sport creation form state
+  const [showAddSport, setShowAddSport] = useState(false);
+  const [novoEsporteNome, setNovoEsporteNome] = useState("");
+  const [novoEsporteEmoji, setNovoEsporteEmoji] = useState("");
 
   const [verCheckInId, setVerCheckInId] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+
+  // Load custom sports on mount
+  useEffect(() => {
+    setCustomSports(db.getCustomSports());
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !sessao) router.replace("/login");
@@ -67,14 +101,10 @@ export default function CheckinPage() {
   // Combined library of available metrics
   const allAvailableMetrics = [...METRIC_TEMPLATES, ...customMetricasDisponiveis];
 
-  // Auto-set default metrics when sport changes (only if active list is empty or sport changed manually)
+  // Auto-set default metrics when sport changes
   useEffect(() => {
     const defaults = METRIC_TEMPLATES.filter(m => m.sport === sport).map(m => m.id);
-    if (sport !== "custom") {
-      setActiveMetricIds(defaults);
-    } else {
-      setActiveMetricIds([]);
-    }
+    setActiveMetricIds(defaults);
   }, [sport]);
 
   useEffect(() => {
@@ -98,6 +128,35 @@ export default function CheckinPage() {
     setLoading(true);
     setErro(null);
 
+    try {
+      const sps = await listarSpots();
+      db.set("spots", sps);
+    } catch (e) {
+      console.warn("Erro ao buscar spots da API, usando DB local:", e);
+    }
+
+    try {
+      const sesss = await listarSessoes();
+      db.set("sessoes", sesss);
+    } catch (e) {
+      console.warn("Erro ao buscar sessoes da API, usando DB local:", e);
+    }
+
+    try {
+      const cks = await apiListarCheckIns(sessao.id);
+      const mappedCks = cks.map(c => ({
+        id: c.id!,
+        atletaId: c.atletaId,
+        sessaoId: c.sessaoId,
+        horario: c.horario ? c.horario.toString() : "",
+        cancelado: c.cancelado || false,
+        temAtividade: c.atividadeRegistrada || false
+      }));
+      db.set("checkins", mappedCks);
+    } catch (e) {
+      console.warn("Erro ao buscar checkins da API, usando DB local:", e);
+    }
+
     const s = db.get("sessoes");
     const sp = db.get("spots");
     setSpots(sp);
@@ -112,7 +171,35 @@ export default function CheckinPage() {
     setSessoesAtivas(active);
 
     setCheckIns(db.filter("checkins", c => c.atletaId === sessao.id));
-    setAtividades(db.get("atividades"));
+    
+    try {
+      const apiAtivs = await apiListarAtividades(sessao.id);
+      const mappedAtivs = apiAtivs.map(a => {
+        let parsedMetrics = [];
+        if (a.metricas) {
+          try {
+            parsedMetrics = JSON.parse(a.metricas);
+          } catch {}
+        }
+        return {
+          id: a.id!,
+          checkInId: a.checkInId!,
+          atletaId: a.atletaId || sessao.id,
+          sport: a.esporte.toLowerCase() as any,
+          duracao: Math.round(a.duracaoSegundos / 60),
+          intensidade: (a.intensidade?.toLowerCase() || "media") as any,
+          xpGanho: a.xpCalculado || 0,
+          metricas: {
+            distancia: a.distancia > 0 ? a.distancia : undefined,
+            custom: parsedMetrics
+          }
+        };
+      });
+      setAtividades(mappedAtivs);
+      db.set("atividades", mappedAtivs);
+    } catch (e) {
+      setAtividades(db.get("atividades"));
+    }
     
     const stats = db.getShadowStats(sessao.id);
     setCustomMetricasDisponiveis(stats.customMetricas || []);
@@ -138,15 +225,35 @@ export default function CheckinPage() {
       return;
     }
 
-    db.add("checkins", {
+    const payload = {
       atletaId: sessao.id,
       sessaoId: sessaoObj.id,
-      horario: new Date().toISOString(),
-      cancelado: false,
-      temAtividade: false
-    });
+      latitude: -23.5505,
+      longitude: -46.6333
+    };
 
-    setSuccessMessage(`Check-in confirmado na sessão "${sessaoObj.descricao}"!`);
+    try {
+      const checkinSalvoBackend = await apiRealizarCheckIn(payload);
+      db.add("checkins", {
+        id: checkinSalvoBackend.id!,
+        atletaId: sessao.id,
+        sessaoId: sessaoObj.id,
+        horario: checkinSalvoBackend.horario ? checkinSalvoBackend.horario.toString() : new Date().toISOString(),
+        cancelado: false,
+        temAtividade: false
+      } as any);
+      setSuccessMessage(`Check-in confirmado na sessão "${sessaoObj.descricao}"!`);
+    } catch (err) {
+      db.add("checkins", {
+        atletaId: sessao.id,
+        sessaoId: sessaoObj.id,
+        horario: new Date().toISOString(),
+        cancelado: false,
+        temAtividade: false
+      });
+      setSuccessMessage("Check-in confirmado localmente (offline).");
+    }
+
     carregar();
     setSaving(false);
   }
@@ -175,8 +282,14 @@ export default function CheckinPage() {
     }
     
     if (confirm("Tem certeza que deseja cancelar este check-in?")) {
-      db.update("checkins", checkInId, { cancelado: true });
-      setSuccessMessage("Check-in cancelado com sucesso.");
+      try {
+        await apiCancelarCheckIn(checkInId);
+        db.update("checkins", checkInId, { cancelado: true });
+        setSuccessMessage("Check-in cancelado com sucesso globalmente.");
+      } catch (err) {
+        db.update("checkins", checkInId, { cancelado: true });
+        setSuccessMessage("Check-in cancelado com sucesso localmente.");
+      }
       carregar();
     }
   }
@@ -188,7 +301,7 @@ export default function CheckinPage() {
       id: "custom_" + Math.random().toString(36).substr(2, 9),
       label: novaMetricaLabel,
       unit: novaMetricaUnit,
-      sport: "custom"
+      sport: sport // associate with currently selected sport
     };
     
     const stats = db.getShadowStats(sessao.id);
@@ -201,6 +314,18 @@ export default function CheckinPage() {
     setNovaMetricaLabel("");
     setNovaMetricaUnit("");
     setShowAddCustom(false);
+  }
+
+  function adicionarNovoEsporte() {
+    if (!novoEsporteNome.trim()) return;
+    const emoji = novoEsporteEmoji.trim() || "🏅";
+    const newId = db.addCustomSport(novoEsporteNome.trim(), emoji);
+    const updated = db.getCustomSports();
+    setCustomSports(updated);
+    setSport(newId);
+    setNovoEsporteNome("");
+    setNovoEsporteEmoji("");
+    setShowAddSport(false);
   }
 
   function toggleMetric(id: string) {
@@ -217,12 +342,18 @@ export default function CheckinPage() {
     if (checkInSelecionado.cancelado) {
       setErro("Erro: Não é possível registrar atividade em um check-in cancelado.");
       setCheckInSelecionado(null);
+      setEditAtividadeId(null);
       return;
     }
 
-    if (checkInSelecionado.checkoutHorario) {
+    const sessaoObj = sessoesAtivas.concat(db.get("sessoes")).find(s => s.id === checkInSelecionado.sessaoId);
+    const isSessaoAtiva = sessaoObj && new Date(sessaoObj.periodoFim) > new Date() && !sessaoObj.cancelada;
+
+    // Block only if user checked out AND is NOT editing an activity of an active session
+    if (checkInSelecionado.checkoutHorario && (editAtividadeId === null || !isSessaoAtiva)) {
       setErro("Erro: Não é possível registrar performance após realizar o check-out.");
       setCheckInSelecionado(null);
+      setEditAtividadeId(null);
       return;
     }
 
@@ -231,15 +362,17 @@ export default function CheckinPage() {
     if (isNaN(duracaoInt) || duracaoInt <= 0) {
       setErro("Erro: A duração da atividade deve ser maior que zero.");
       setCheckInSelecionado(null);
+      setEditAtividadeId(null);
       return;
     }
 
-    // Validate metrics to ensure they are positive (covers RN 11 for distance and others)
+    // Validate metrics to ensure they are positive
     for (const id of activeMetricIds) {
       const val = parseFloat(metricValues[id]);
       if (isNaN(val) || val <= 0) {
         setErro("Erro: Todas as métricas registradas devem possuir valores maiores que zero.");
         setCheckInSelecionado(null);
+        setEditAtividadeId(null);
         return;
       }
     }
@@ -257,23 +390,103 @@ export default function CheckinPage() {
       };
     });
 
-    db.add("atividades", {
+    const distanceVal = parseFloat(metricValues["distance"] || "0");
+    const formattedDate = new Date().toISOString().slice(0, 19);
+
+    const payload: RegistroAtividadeDto = {
+      atletaId: sessao.id,
       checkInId: checkInSelecionado.id,
-      sport,
-      duracao: duracaoInt,
-      intensidade,
-      xpGanho: xpCalculado,
-      metricas: {
-        custom: finalMetrics
+      esporte: sport.toUpperCase(),
+      data: formattedDate,
+      distancia: distanceVal,
+      duracaoSegundos: duracaoInt * 60,
+      intensidade: intensidade.toUpperCase(),
+      xpCalculado: xpCalculado,
+      origemRegistro: "CHECKIN",
+      metricas: JSON.stringify(finalMetrics)
+    };
+
+    try {
+      let apiRes;
+      if (editAtividadeId !== null) {
+        apiRes = await apiAtualizarAtividade(editAtividadeId, payload);
+        db.update("atividades", editAtividadeId, {
+          sport,
+          duracao: duracaoInt,
+          intensidade,
+          xpGanho: xpCalculado,
+          distancia: distanceVal,
+          data: formattedDate,
+          metricas: {
+            distancia: distanceVal,
+            custom: finalMetrics
+          }
+        } as any);
+        setSuccessMessage("Performance atualizada com sucesso no banco de dados!");
+      } else {
+        apiRes = await apiRegistrarAtividade(payload);
+        db.add("atividades", {
+          id: apiRes.id,
+          checkInId: checkInSelecionado.id,
+          atletaId: sessao.id,
+          sport,
+          duracao: duracaoInt,
+          intensidade,
+          xpGanho: xpCalculado,
+          distancia: distanceVal,
+          data: formattedDate,
+          origemRegistro: "CHECKIN",
+          metricas: {
+            distancia: distanceVal,
+            custom: finalMetrics
+          }
+        } as any);
+        db.update("checkins", checkInSelecionado.id, { temAtividade: true });
+        db.addXP(sessao.id, xpCalculado);
+        setSuccessMessage(`Performance registrada! +${xpCalculado.toFixed(1)} XP adicionados ao seu potencial.`);
       }
-    });
+    } catch (e) {
+      if (editAtividadeId !== null) {
+        db.update("atividades", editAtividadeId, {
+          sport,
+          duracao: duracaoInt,
+          intensidade,
+          xpGanho: xpCalculado,
+          distancia: distanceVal,
+          metricas: {
+            distancia: distanceVal,
+            custom: finalMetrics
+          }
+        } as any);
+        setSuccessMessage("Performance atualizada localmente!");
+      } else {
+        db.add("atividades", {
+          checkInId: checkInSelecionado.id,
+          atletaId: sessao.id,
+          sport,
+          duracao: duracaoInt,
+          intensidade,
+          xpGanho: xpCalculado,
+          distancia: distanceVal,
+          data: formattedDate,
+          origemRegistro: "CHECKIN",
+          metricas: {
+            distancia: distanceVal,
+            custom: finalMetrics
+          }
+        } as any);
+        db.update("checkins", checkInSelecionado.id, { temAtividade: true });
+        db.addXP(sessao.id, xpCalculado);
+        setSuccessMessage(`Performance registrada localmente! +${xpCalculado.toFixed(1)} XP adicionados.`);
+      }
+    }
 
-    db.update("checkins", checkInSelecionado.id, { temAtividade: true });
-    db.addXP(sessao.id, xpCalculado);
-
-    setSuccessMessage(`Performance registrada! +${xpCalculado.toFixed(1)} XP adicionados ao seu potencial.`);
     setCheckInSelecionado(null);
+    setEditAtividadeId(null);
     setMetricValues({});
+    setDuracao("60");
+    setSport("surf");
+    setIntensidade("media");
     carregar();
     setSaving(false);
   }
@@ -599,23 +812,85 @@ export default function CheckinPage() {
 
       <Modal
         isOpen={!!checkInSelecionado}
-        onClose={() => setCheckInSelecionado(null)}
-        title="Registrar Performance"
+        onClose={() => {
+          setCheckInSelecionado(null);
+          setEditAtividadeId(null);
+          setMetricValues({});
+          setDuracao("60");
+          setSport("surf");
+          setIntensidade("media");
+        }}
+        title={editAtividadeId ? "Editar Performance" : "Registrar Performance"}
       >
         <form onSubmit={registrarAtividade} className="space-y-8">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Select
-              label="Esporte"
-              value={sport}
-              onChange={(e) => setSport(e.target.value as SportType)}
-              required
-            >
-              <option value="surf">Surfe 🏄‍♂️</option>
-              <option value="skate">Skate 🛹</option>
-              <option value="futebol">Futebol ⚽</option>
-              <option value="corrida">Corrida 🏃‍♂️</option>
-              <option value="custom">Outro Esporte ✨</option>
-            </Select>
+            <div className="flex flex-col gap-2">
+              <label className="text-[11px] font-black uppercase tracking-wider text-ink-400">Esporte</label>
+              <div className="flex gap-2">
+                <select
+                  value={sport}
+                  onChange={(e) => setSport(e.target.value as SportType)}
+                  required
+                  className="flex-1 rounded-xl border border-ink-200 bg-white px-4 py-2.5 text-[13px] font-bold text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                >
+                  <option value="corrida">🏃 Corrida</option>
+                  <option value="surf">🏄 Surfe</option>
+                  <option value="skate">🛹 Skate</option>
+                  <option value="futebol">⚽ Futebol</option>
+                  <option value="bicicleta">🚴 Bicicleta</option>
+                  <option value="caminhada">🥾 Caminhada</option>
+                  <option value="natacao">🏊 Natação</option>
+                  {customSports.map(s => (
+                    <option key={s.id} value={s.id}>{s.label}</option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSport(!showAddSport)}
+                  title="Adicionar novo esporte"
+                  className="px-3 py-2.5 rounded-xl border border-accent/40 bg-accent/10 text-accent text-[12px] font-black hover:bg-accent/20 transition-colors shrink-0"
+                >
+                  {showAddSport ? "✕" : "+ Esporte"}
+                </button>
+              </div>
+              {showAddSport && (
+                <div className="flex flex-col gap-3 p-4 bg-white rounded-2xl border border-accent/20 shadow-lg animate-in zoom-in duration-200">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-ink-400">Novo Esporte</p>
+                  <div className="grid grid-cols-[80px_1fr] gap-3">
+                    <div>
+                      <label className="text-[10px] font-bold text-ink-400 mb-1 block">Emoji</label>
+                      <input
+                        type="text"
+                        placeholder="🏅"
+                        value={novoEsporteEmoji}
+                        onChange={(e) => setNovoEsporteEmoji(e.target.value)}
+                        maxLength={2}
+                        className="w-full rounded-xl border border-ink-200 bg-ink-50 px-3 py-2 text-center text-xl focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-[10px] font-bold text-ink-400 mb-1 block">Nome do Esporte</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Basquete"
+                        value={novoEsporteNome}
+                        onChange={(e) => setNovoEsporteNome(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && adicionarNovoEsporte()}
+                        className="w-full rounded-xl border border-ink-200 bg-ink-50 px-3 py-2 text-[13px] font-bold text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      />
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={adicionarNovoEsporte}
+                    disabled={!novoEsporteNome.trim()}
+                    className="w-full py-2 rounded-xl bg-accent text-white text-[12px] font-black uppercase tracking-wider disabled:opacity-40 hover:bg-accent/90 transition-colors"
+                  >
+                    Salvar Esporte
+                  </button>
+                </div>
+              )}
+            </div>
 
             <Select
               label="Intensidade do Treino"
@@ -752,7 +1027,14 @@ export default function CheckinPage() {
               type="button"
               variant="secondary"
               size="lg"
-              onClick={() => setCheckInSelecionado(null)}
+              onClick={() => {
+                setCheckInSelecionado(null);
+                setEditAtividadeId(null);
+                setMetricValues({});
+                setDuracao("60");
+                setSport("surf");
+                setIntensidade("media");
+              }}
             >
               Cancelar
             </Button>
@@ -818,8 +1100,14 @@ export default function CheckinPage() {
                     )}
                     {a.metricas?.gols !== undefined && (
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-ink-500">Gols/Assist</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-ink-500">Gols</p>
                         <p className="text-lg font-bold text-white">{a.metricas.gols}</p>
+                      </div>
+                    )}
+                    {a.metricas?.assistencias !== undefined && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-ink-500">Assistências</p>
+                        <p className="text-lg font-bold text-white">{a.metricas.assistencias}</p>
                       </div>
                     )}
                     {a.metricas?.velocidadeMax !== undefined && (
@@ -836,6 +1124,47 @@ export default function CheckinPage() {
                       </div>
                     ))}
                   </div>
+
+                  {sessaoDoVer && new Date(sessaoDoVer.periodoFim) > new Date() && !sessaoDoVer.cancelada && !verCheckInObj?.cancelado && (
+                    <div className="mt-6 pt-4 border-t border-white/10 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerCheckInId(null);
+                          setCheckInSelecionado(verCheckInObj || null);
+                          setEditAtividadeId(a.id);
+                          setSport(a.sport);
+                          setDuracao(a.duracao.toString());
+                          setIntensidade(a.intensidade || "media");
+                          
+                          const values: Record<string, string> = {};
+                          const ids: string[] = [];
+                          
+                          a.metricas?.custom?.forEach((m: any) => {
+                            const match = allAvailableMetrics.find(metric => metric.label === m.label);
+                            if (match) {
+                              values[match.id] = m.value.toString();
+                              ids.push(match.id);
+                            }
+                          });
+                          
+                          if (a.metricas?.distancia !== undefined) {
+                            const match = allAvailableMetrics.find(metric => metric.id === "distance");
+                            if (match) {
+                              values[match.id] = a.metricas.distancia.toString();
+                              if (!ids.includes(match.id)) ids.push(match.id);
+                            }
+                          }
+
+                          setMetricValues(values);
+                          setActiveMetricIds(ids);
+                        }}
+                        className="rounded-xl bg-accent px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white shadow-md transition-all hover:scale-105 active:scale-95"
+                      >
+                        Editar Performance
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

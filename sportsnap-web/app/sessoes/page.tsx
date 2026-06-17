@@ -10,6 +10,8 @@ import { Input, Select } from "@/components/Input";
 import { Alert } from "@/components/Alert";
 import { Badge } from "@/components/Badge";
 import { DynamicMap } from "@/components/DynamicMap";
+import { Modal } from "@/components/Modal";
+import { listarSpots, listarSessoes, criarSessao, atualizarSessao, cancelarSessao as apiCancelarSessao } from "@/lib/spots";
 
 export default function SessoesPage() {
   const [sessoes, setSessoes] = useState<Sessao[]>([]);
@@ -32,9 +34,24 @@ export default function SessoesPage() {
 
   const [aviso, setAviso] = useState<string | null>(null);
 
-  function carregar() {
-    setSessoes(db.get("sessoes"));
-    setSpots(db.get("spots"));
+  async function carregar() {
+    try {
+      const resSpots = await listarSpots();
+      setSpots(resSpots);
+      db.set("spots", resSpots);
+    } catch (e) {
+      console.warn("Erro ao buscar spots da API, usando DB local:", e);
+      setSpots(db.get("spots"));
+    }
+
+    try {
+      const resSessoes = await listarSessoes();
+      setSessoes(resSessoes);
+      db.set("sessoes", resSessoes);
+    } catch (e) {
+      console.warn("Erro ao buscar sessoes da API, usando DB local:", e);
+      setSessoes(db.get("sessoes"));
+    }
   }
 
   useEffect(() => {
@@ -73,20 +90,39 @@ export default function SessoesPage() {
       return;
     }
 
-    db.add("sessoes", {
+    const payload = {
       spotId: parseInt(spotId, 10),
       periodoInicio: startDate.toISOString(),
       periodoFim: endDate.toISOString(),
       descricao,
-    });
+    };
+
+    try {
+      await criarSessao(payload);
+      db.add("sessoes", payload);
+      setAviso("Sessão agendada com sucesso globalmente.");
+    } catch (err) {
+      db.add("sessoes", payload);
+      setAviso("Sessão agendada localmente (offline).");
+    }
+
     setInicio("");
     setFim("");
     setDescricao("");
-    setAviso("Sessão agendada com sucesso.");
     carregar();
   }
 
   function prepararEdicao(s: Sessao) {
+    const agora = new Date();
+    const end = new Date(s.periodoFim);
+    if (end <= agora) {
+      setAviso("Erro: Não é possível editar uma sessão que já foi encerrada.");
+      return;
+    }
+    if (s.cancelada) {
+      setAviso("Erro: Não é possível editar uma sessão cancelada.");
+      return;
+    }
     setEditingSessao(s);
     setEditSpotId(s.spotId.toString());
     setEditInicio(new Date(s.periodoInicio).toISOString().slice(0, 16));
@@ -94,11 +130,21 @@ export default function SessoesPage() {
     setEditDesc(s.descricao);
   }
 
-  function salvarEdicao(e: React.FormEvent) {
+  async function salvarEdicao(e: React.FormEvent) {
     e.preventDefault();
     if (!editingSessao) return;
     
     const agora = new Date();
+    const end = new Date(editingSessao.periodoFim);
+    if (end <= agora) {
+      setAviso("Erro: Não é possível salvar alterações em uma sessão que já foi encerrada.");
+      return;
+    }
+    if (editingSessao.cancelada) {
+      setAviso("Erro: Não é possível salvar alterações em uma sessão cancelada.");
+      return;
+    }
+    
     const originalStart = new Date(editingSessao.periodoInicio);
     const originalEnd = new Date(editingSessao.periodoFim);
     const isOngoing = originalStart <= agora && originalEnd >= agora;
@@ -119,18 +165,26 @@ export default function SessoesPage() {
       return;
     }
 
-    db.update("sessoes", editingSessao.id, {
+    const payload = {
       spotId: parseInt(editSpotId, 10),
       periodoInicio: newStartDate.toISOString(),
       periodoFim: newEndDate.toISOString(),
       descricao: editDesc
-    });
+    };
+
+    try {
+      await atualizarSessao(editingSessao.id, payload);
+      db.update("sessoes", editingSessao.id, payload);
+      setAviso(`Sessão #${editingSessao.id} atualizada globalmente.`);
+    } catch (err) {
+      db.update("sessoes", editingSessao.id, payload);
+      setAviso(`Sessão #${editingSessao.id} atualizada localmente.`);
+    }
     setEditingSessao(null);
-    setAviso(`Sessão #${editingSessao.id} atualizada.`);
     carregar();
   }
 
-  function cancelarSessao(s: Sessao) {
+  async function cancelarSessao(s: Sessao) {
     const agora = new Date();
     const start = new Date(s.periodoInicio);
     
@@ -140,8 +194,22 @@ export default function SessoesPage() {
     }
     
     if (confirm("Deseja realmente cancelar esta sessão?")) {
-      db.update("sessoes", s.id, { cancelada: true });
-      setAviso(`Sessão #${s.id} cancelada.`);
+      try {
+        await apiCancelarSessao(s.id);
+        db.update("sessoes", s.id, { cancelada: true });
+        setAviso(`Sessão #${s.id} cancelada globalmente.`);
+      } catch (err) {
+        db.update("sessoes", s.id, { cancelada: true });
+        setAviso(`Sessão #${s.id} cancelada localmente.`);
+      }
+      carregar();
+    }
+  }
+
+  function excluirSessao(id: number) {
+    if (confirm("Deseja realmente excluir esta sessão encerrada?")) {
+      db.delete("sessoes", id);
+      setAviso(`Sessão #${id} excluída.`);
       carregar();
     }
   }
@@ -168,12 +236,12 @@ export default function SessoesPage() {
 
       <div className="grid gap-8 lg:grid-cols-[1fr_2fr]">
         <div className="space-y-6">
-          <Card title={editingSessao ? "Editar Sessão" : "Nova Sessão"}>
-            <form onSubmit={editingSessao ? salvarEdicao : cadastrar} className="space-y-4">
+          <Card title="Nova Sessão">
+            <form onSubmit={cadastrar} className="space-y-4">
               <Select
                 label="Spot / Local"
-                value={editingSessao ? editSpotId : spotId}
-                onChange={(e) => editingSessao ? setEditSpotId(e.target.value) : setSpotId(e.target.value)}
+                value={spotId}
+                onChange={(e) => setSpotId(e.target.value)}
                 required
               >
                 <option value="">Selecione...</option>
@@ -185,33 +253,29 @@ export default function SessoesPage() {
                 <Input
                   label="Início"
                   type="datetime-local"
-                  value={editingSessao ? editInicio : inicio}
-                  onChange={(e) => editingSessao ? setEditInicio(e.target.value) : setInicio(e.target.value)}
-                  disabled={!!(editingSessao && new Date(editingSessao.periodoInicio) <= new Date() && new Date(editingSessao.periodoFim) >= new Date())}
+                  value={inicio}
+                  onChange={(e) => setInicio(e.target.value)}
                   required
                 />
                 <Input
                   label="Fim"
                   type="datetime-local"
-                  value={editingSessao ? editFim : fim}
-                  onChange={(e) => editingSessao ? setEditFim(e.target.value) : setFim(e.target.value)}
+                  value={fim}
+                  onChange={(e) => setFim(e.target.value)}
                   required
                 />
               </div>
               <Input
                 label="Descrição da Atividade"
-                value={editingSessao ? editDesc : descricao}
-                onChange={(e) => editingSessao ? setEditDesc(e.target.value) : setDescricao(e.target.value)}
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
                 placeholder="Ex: Treino de Surf Avançado"
                 required
               />
               <div className="flex gap-2">
                 <Button type="submit" className="flex-1" size="lg">
-                  {editingSessao ? "Salvar Alterações" : "Agendar Sessão"}
+                  Agendar Sessão
                 </Button>
-                {editingSessao && (
-                  <Button type="button" variant="ghost" onClick={() => setEditingSessao(null)}>Cancelar</Button>
-                )}
               </div>
             </form>
           </Card>
@@ -324,16 +388,33 @@ export default function SessoesPage() {
                       </div>
                       
                       <div className="mt-5 flex sm:flex-row flex-col gap-2 w-full">
-                        <Button size="md" variant="secondary" className="flex-1 justify-center" onClick={() => prepararEdicao(s)}>Editar Sessão</Button>
-                        <Button 
-                          size="md" 
-                          variant="ghost" 
-                          className="sm:flex-none justify-center text-rose-500 hover:bg-rose-50 disabled:opacity-30" 
-                          onClick={() => cancelarSessao(s)}
-                          disabled={start <= new Date() || s.cancelada}
-                        >
-                          Cancelar
-                        </Button>
+                        {status.text === "Encerrada" || status.text === "Cancelada" ? (
+                          <>
+                            {status.text === "Encerrada" && (
+                              <Button 
+                                size="md" 
+                                variant="ghost" 
+                                className="w-full justify-center text-rose-500 hover:bg-rose-50" 
+                                onClick={() => excluirSessao(s.id)}
+                              >
+                                Excluir
+                              </Button>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            <Button size="md" variant="secondary" className="flex-1 justify-center" onClick={() => prepararEdicao(s)}>Editar Sessão</Button>
+                            <Button 
+                              size="md" 
+                              variant="ghost" 
+                              className="sm:flex-none justify-center text-rose-500 hover:bg-rose-50 disabled:opacity-30" 
+                              onClick={() => cancelarSessao(s)}
+                              disabled={start <= new Date() || s.cancelada}
+                            >
+                              Cancelar
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -343,6 +424,56 @@ export default function SessoesPage() {
           )}
         </Card>
       </div>
+
+      <Modal isOpen={!!editingSessao} onClose={() => setEditingSessao(null)} title="Editar Sessão">
+        {editingSessao && (
+          <form onSubmit={salvarEdicao} className="space-y-4">
+            <Select
+              label="Spot / Local"
+              value={editSpotId}
+              onChange={(e) => setEditSpotId(e.target.value)}
+              required
+            >
+              <option value="">Selecione...</option>
+              {spots.map((s) => (
+                <option key={s.id} value={s.id}>#{s.id} – {s.nome}</option>
+              ))}
+            </Select>
+            <div className="grid grid-cols-2 gap-4">
+              <Input
+                label="Início"
+                type="datetime-local"
+                value={editInicio}
+                onChange={(e) => setEditInicio(e.target.value)}
+                disabled={!!(new Date(editingSessao.periodoInicio) <= new Date() && new Date(editingSessao.periodoFim) >= new Date())}
+                required
+              />
+              <Input
+                label="Fim"
+                type="datetime-local"
+                value={editFim}
+                onChange={(e) => setEditFim(e.target.value)}
+                required
+              />
+            </div>
+            <Input
+              label="Descrição da Atividade"
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              placeholder="Ex: Treino de Surf Avançado"
+              required
+            />
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1" size="lg">
+                Salvar Alterações
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setEditingSessao(null)}>
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }

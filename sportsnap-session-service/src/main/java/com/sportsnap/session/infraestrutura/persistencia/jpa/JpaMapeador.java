@@ -77,10 +77,27 @@ class JpaMapeador {
     }
 
     RegistroAtividade paraDominio(RegistroAtividadeJpa jpa) {
-        var checkInId = new CheckInId(jpa.checkInId);
-        var intensidade = Intensidade.valueOf(jpa.intensidade);
-        return new RegistroAtividade(new RegistroAtividadeId(jpa.id), checkInId,
-            jpa.distancia, jpa.duracaoSegundos, intensidade, jpa.xpCalculado);
+        var checkInId = jpa.checkInId != null ? new CheckInId(jpa.checkInId) : null;
+        var intensidade = jpa.intensidade != null ? Intensidade.valueOf(jpa.intensidade) : null;
+        var atletaId = new AtletaId(jpa.atletaId);
+        
+        return new RegistroAtividade(
+            new RegistroAtividadeId(jpa.id),
+            atletaId,
+            checkInId,
+            jpa.esporte,
+            jpa.data,
+            jpa.distancia,
+            jpa.duracaoSegundos,
+            intensidade,
+            jpa.xpCalculado != null ? jpa.xpCalculado : 0.0,
+            jpa.esforcoPercebido,
+            jpa.observacoes,
+            jpa.origemRegistro,
+            jpa.metricas,
+            jpa.criadoEm,
+            jpa.atualizadoEm
+        );
     }
 
     RegistroAtividadeJpa paraJpa(RegistroAtividade dominio) {
@@ -88,11 +105,20 @@ class JpaMapeador {
         if (dominio.getId() != null) {
             jpa.id = dominio.getId().getId();
         }
-        jpa.checkInId = dominio.getCheckInId().getId();
+        jpa.atletaId = dominio.getAtletaId().getId();
+        jpa.checkInId = dominio.getCheckInId() != null ? dominio.getCheckInId().getId() : null;
         jpa.distancia = dominio.getDistancia();
         jpa.duracaoSegundos = dominio.getDuracaoSegundos();
-        jpa.intensidade = dominio.getIntensidade().name();
+        jpa.intensidade = dominio.getIntensidade() != null ? dominio.getIntensidade().name() : null;
         jpa.xpCalculado = dominio.getXpCalculado();
+        jpa.esporte = dominio.getEsporte();
+        jpa.data = dominio.getData();
+        jpa.esforcoPercebido = dominio.getEsforcoPercebido();
+        jpa.observacoes = dominio.getObservacoes();
+        jpa.origemRegistro = dominio.getOrigemRegistro();
+        jpa.metricas = dominio.getMetricas();
+        jpa.criadoEm = dominio.getCriadoEm();
+        jpa.atualizadoEm = dominio.getAtualizadoEm();
         return jpa;
     }
 }

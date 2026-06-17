@@ -9,6 +9,8 @@ import { Button } from "@/components/Button";
 import { Input, Textarea } from "@/components/Input";
 import { Alert } from "@/components/Alert";
 import { DynamicMap } from "@/components/DynamicMap";
+import { Modal } from "@/components/Modal";
+import { listarSpots, criarSpot, atualizarSpot, removerSpot } from "@/lib/spots";
 
 export default function SpotsPage() {
   const [spots, setSpots] = useState<Spot[]>([]);
@@ -25,8 +27,15 @@ export default function SpotsPage() {
 
   const [aviso, setAviso] = useState<string | null>(null);
 
-  function carregar() {
-    setSpots(db.get("spots"));
+  async function carregar() {
+    try {
+      const res = await listarSpots();
+      setSpots(res);
+      db.set("spots", res);
+    } catch (e) {
+      console.warn("Erro ao buscar spots da API, usando DB local:", e);
+      setSpots(db.get("spots"));
+    }
   }
 
   useEffect(() => {
@@ -43,17 +52,24 @@ export default function SpotsPage() {
       setAviso("Erro: Longitude deve estar entre -180 e 180.");
       return;
     }
-    db.add("spots", {
+    const payload = {
       nome,
       latitude,
       longitude,
       descricao,
-    });
+    };
+    try {
+      await criarSpot(payload);
+      db.add("spots", payload);
+      setAviso("Spot cadastrado com sucesso globalmente.");
+    } catch (err) {
+      db.add("spots", payload);
+      setAviso("Spot cadastrado localmente (offline).");
+    }
     setNome("");
     setLatitude(-23.5505);
     setLongitude(-46.6333);
     setDescricao("");
-    setAviso("Spot cadastrado com sucesso.");
     carregar();
   }
 
@@ -65,7 +81,7 @@ export default function SpotsPage() {
     setEditDesc(s.descricao || "");
   }
 
-  function salvarEdicao(e: React.FormEvent) {
+  async function salvarEdicao(e: React.FormEvent) {
     e.preventDefault();
     if (!editingSpot) return;
     if (editLat < -90 || editLat > 90) {
@@ -76,21 +92,34 @@ export default function SpotsPage() {
       setAviso("Erro: Longitude deve estar entre -180 e 180.");
       return;
     }
-    db.update("spots", editingSpot.id, {
+    const payload = {
       nome: editNome,
       latitude: editLat,
       longitude: editLong,
       descricao: editDesc
-    });
+    };
+    try {
+      await atualizarSpot(editingSpot.id, payload);
+      db.update("spots", editingSpot.id, payload);
+      setAviso(`Spot #${editingSpot.id} atualizado globalmente.`);
+    } catch (err) {
+      db.update("spots", editingSpot.id, payload);
+      setAviso(`Spot #${editingSpot.id} atualizado localmente.`);
+    }
     setEditingSpot(null);
-    setAviso(`Spot #${editingSpot.id} atualizado.`);
     carregar();
   }
 
-  function excluirSpot(id: number) {
+  async function excluirSpot(id: number) {
     if (confirm("Deseja excluir este spot?")) {
-      db.delete("spots", id);
-      setAviso(`Spot #${id} excluído.`);
+      try {
+        await removerSpot(id);
+        db.delete("spots", id);
+        setAviso(`Spot #${id} excluído globalmente.`);
+      } catch (err) {
+        db.delete("spots", id);
+        setAviso(`Spot #${id} excluído localmente.`);
+      }
       carregar();
     }
   }
@@ -107,12 +136,12 @@ export default function SpotsPage() {
 
       <div className="grid gap-8 lg:grid-cols-[1fr_2fr]">
         <div className="space-y-6">
-          <Card title={editingSpot ? "Editar Spot" : "Novo Spot"}>
-            <form onSubmit={editingSpot ? salvarEdicao : cadastrar} className="space-y-4">
+          <Card title="Novo Spot">
+            <form onSubmit={cadastrar} className="space-y-4">
               <Input 
                 label="Nome do Local" 
-                value={editingSpot ? editNome : nome} 
-                onChange={(e) => editingSpot ? setEditNome(e.target.value) : setNome(e.target.value)} 
+                value={nome} 
+                onChange={(e) => setNome(e.target.value)} 
                 required 
               />
               
@@ -121,42 +150,28 @@ export default function SpotsPage() {
                     Localização no Mapa
                  </label>
                  <DynamicMap 
-                   latitude={editingSpot ? editLat : latitude}
-                   longitude={editingSpot ? editLong : longitude}
+                   latitude={latitude}
+                   longitude={longitude}
                    onChange={(lat, lng) => {
-                      if (editingSpot) {
-                         setEditLat(lat);
-                         setEditLong(lng);
-                      } else {
-                         setLatitude(lat);
-                         setLongitude(lng);
-                      }
+                      setLatitude(lat);
+                      setLongitude(lng);
                    }}
                    onAddressFound={(addr) => {
-                      // Optionally update the name if it's currently empty, or always update it
-                      // Updating it always provides better feedback as requested
-                      if (editingSpot) {
-                         setEditNome(addr);
-                      } else {
-                         setNome(addr);
-                      }
+                      setNome(addr);
                    }}
                  />
               </div>
 
               <Textarea
                 label="Descrição / Dicas"
-                value={editingSpot ? editDesc : descricao}
-                onChange={(e) => editingSpot ? setEditDesc(e.target.value) : setDescricao(e.target.value)}
+                value={descricao}
+                onChange={(e) => setDescricao(e.target.value)}
                 rows={3}
               />
               <div className="flex gap-2">
                 <Button type="submit" className="flex-1" size="lg">
-                  {editingSpot ? "Salvar Alterações" : "Cadastrar Spot"}
+                  Cadastrar Spot
                 </Button>
-                {editingSpot && (
-                  <Button type="button" variant="ghost" onClick={() => setEditingSpot(null)}>Cancelar</Button>
-                )}
               </div>
             </form>
           </Card>
@@ -205,6 +220,51 @@ export default function SpotsPage() {
           )}
         </Card>
       </div>
+
+      <Modal isOpen={!!editingSpot} onClose={() => setEditingSpot(null)} title="Editar Spot">
+        {editingSpot && (
+          <form onSubmit={salvarEdicao} className="space-y-4">
+            <Input 
+              label="Nome do Local" 
+              value={editNome} 
+              onChange={(e) => setEditNome(e.target.value)} 
+              required 
+            />
+            
+            <div>
+               <label className="mb-1 block text-[13px] font-medium text-ink-700">
+                  Localização no Mapa
+               </label>
+               <DynamicMap 
+                 latitude={editLat}
+                 longitude={editLong}
+                 onChange={(lat, lng) => {
+                    setEditLat(lat);
+                    setEditLong(lng);
+                 }}
+                 onAddressFound={(addr) => {
+                    setEditNome(addr);
+                 }}
+               />
+            </div>
+
+            <Textarea
+              label="Descrição / Dicas"
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              rows={3}
+            />
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1" size="lg">
+                Salvar Alterações
+              </Button>
+              <Button type="button" variant="ghost" onClick={() => setEditingSpot(null)}>
+                Cancelar
+              </Button>
+            </div>
+          </form>
+        )}
+      </Modal>
     </div>
   );
 }
