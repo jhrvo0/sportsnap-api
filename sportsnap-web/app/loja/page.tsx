@@ -58,7 +58,7 @@ export default function LojaPage() {
   if (!sessao && !carregando) return null;
 
   const fotosNoCarrinhoIds = new Set(cart.map((item) => item.id));
-  const sugestoes = fotos.filter(f => !f.licenciada && !fotosNoCarrinhoIds.has(f.id));
+  const sugestoes = fotos.filter(f => !f.licenciada && f.disponivel && !fotosNoCarrinhoIds.has(f.id));
 
   return (
     <div className="fade-up">
@@ -123,7 +123,7 @@ export default function LojaPage() {
                     </button>
                     <div className="text-right">
                       <p className="text-[10px] font-bold uppercase tracking-widest text-ink-400">Preço</p>
-                      <p className="text-2xl font-black text-ink-900">R$ 29,90</p>
+                      <p className="text-2xl font-black text-ink-900">R$ {Number(f.preco ?? 29.90).toFixed(2).replace(".", ",")}</p>
                     </div>
                   </div>
                 </div>

@@ -21,6 +21,8 @@ export type FotoDto = {
   exifDetalhes: string;
   licenciada: boolean;
   removida: boolean;
+  preco: number;
+  disponivel: boolean;
 };
 
 export type DashboardDto = {
@@ -104,11 +106,10 @@ export async function listarFotos(loteId: number): Promise<FotoDto[]> {
 }
 
 export async function uploadFotos(loteId: number, fotos: { nome: string; urlPreview: string }[]): Promise<FotoDto[]> {
-  const caminhos = fotos.map(f => f.urlPreview);
   const r = await fetch(`${BASE}/fotos`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ loteId, caminhos }),
+    body: JSON.stringify({ loteId, fotos }),
   });
   if (!r.ok) throw new Error("Erro ao fazer upload");
   return r.json();
@@ -117,6 +118,28 @@ export async function uploadFotos(loteId: number, fotos: { nome: string; urlPrev
 export async function removerFoto(id: number): Promise<void> {
   const r = await fetch(`${BASE}/fotos/${id}/remover`, { method: "POST" });
   if (!r.ok) throw new Error("Erro ao remover foto");
+}
+
+export async function definirPreco(id: number, preco: number): Promise<FotoDto> {
+  const r = await fetch(`${BASE}/fotos/${id}/preco`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ preco }),
+  });
+  if (!r.ok) throw new Error("Erro ao definir preço");
+  return r.json();
+}
+
+export async function disponibilizar(id: number): Promise<FotoDto> {
+  const r = await fetch(`${BASE}/fotos/${id}/disponibilizar`, { method: "POST" });
+  if (!r.ok) throw new Error("Erro ao disponibilizar foto");
+  return r.json();
+}
+
+export async function indisponibilizar(id: number): Promise<FotoDto> {
+  const r = await fetch(`${BASE}/fotos/${id}/indisponibilizar`, { method: "POST" });
+  if (!r.ok) throw new Error("Erro ao indisponibilizar foto");
+  return r.json();
 }
 
 // ─── Dashboard ───────────────────────────────────────────────────────────────

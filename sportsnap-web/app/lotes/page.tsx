@@ -43,7 +43,7 @@ export default function LotesPage() {
     try {
       setLotes(await listarLotes(sessao.id));
     } catch {
-      setErro("Não foi possível carregar os lotes. O backend está rodando?");
+      setErro("Não foi possível carregar os álbuns. O backend está rodando?");
     }
   }
 
@@ -60,10 +60,10 @@ export default function LotesPage() {
         spotId: parseInt(spotId),
         descricao,
       });
-      setAviso("Lote criado com sucesso.");
+      setAviso("Álbum criado com sucesso.");
       setSpotId(""); setSessaoId(""); setDescricao("");
       carregar();
-    } catch { setErro("Erro ao criar lote."); }
+    } catch { setErro("Erro ao criar álbum."); }
   }
 
   async function salvarEdicao(id: number) {
@@ -72,38 +72,38 @@ export default function LotesPage() {
     try {
       await editarLote(id, novaDescricao.trim());
       setEditandoId(null);
-      setAviso(`Título do lote #${id} atualizado.`);
+      setAviso(`Título do álbum #${id} atualizado.`);
       carregar();
-    } catch { setErro("Erro ao editar lote."); }
+    } catch { setErro("Erro ao editar álbum."); }
   }
 
   async function arquivar(id: number) {
-    try { await arquivarLote(id); setAviso(`Lote #${id} arquivado.`); carregar(); }
-    catch { setErro("Erro ao arquivar lote."); }
+    try { await arquivarLote(id); setAviso(`Álbum #${id} arquivado.`); carregar(); }
+    catch { setErro("Erro ao arquivar álbum."); }
   }
 
   async function desarquivar(id: number) {
-    try { await desarquivarLote(id); setAviso(`Lote #${id} reativado.`); carregar(); }
-    catch { setErro("Erro ao desarquivar lote."); }
+    try { await desarquivarLote(id); setAviso(`Álbum #${id} reativado.`); carregar(); }
+    catch { setErro("Erro ao desarquivar álbum."); }
   }
 
   async function excluir(id: number) {
-    if (!confirm(`Excluir lote #${id}? Todas as fotos serão removidas.`)) return;
-    try { await excluirLote(id); setAviso(`Lote #${id} excluído.`); carregar(); }
-    catch { setErro("Erro ao excluir lote."); }
+    if (!confirm(`Excluir álbum #${id}? Todas as fotos serão removidas.`)) return;
+    try { await excluirLote(id); setAviso(`Álbum #${id} excluído.`); carregar(); }
+    catch { setErro("Erro ao excluir álbum."); }
   }
 
   if (!sessao) return null;
 
   return (
     <div className="fade-up">
-      <PageHeader eyebrow="Fotógrafo" title="Gestão de Álbuns" subtitle="Organize suas capturas em lotes vinculados a eventos reais." />
+      <PageHeader eyebrow="Fotógrafo" title="Gestão de Álbuns" subtitle="Organize suas capturas em álbuns vinculados a eventos reais." />
 
       {aviso && <Alert tone="success" className="mb-8">{aviso}</Alert>}
       {erro && <Alert tone="danger" className="mb-8">{erro}</Alert>}
 
       <div className="grid gap-8 lg:grid-cols-[1fr_2fr]">
-        <Card title="Criar Novo Lote">
+        <Card title="Criar Novo Álbum">
           <form onSubmit={criar} className="space-y-5">
             <Select label="Local (Spot)" value={spotId} onChange={(e) => setSpotId(e.target.value)} required>
               <option value="">Selecione...</option>
@@ -114,14 +114,14 @@ export default function LotesPage() {
               {SESSOES_FIXAS.map((s) => <option key={s.id} value={s.id}>{s.descricao}</option>)}
             </Select>
             <Input label="Título do Álbum" value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex: Surf Matinal Stella Maris" required />
-            <Button type="submit" className="w-full" size="lg">Gerar Lote</Button>
+            <Button type="submit" className="w-full" size="lg">Criar Álbum</Button>
           </form>
         </Card>
 
         <Card title={`Seus Álbuns (${lotes.length})`}>
           {lotes.length === 0 ? (
             <div className="py-20 text-center bg-ink-50 rounded-[2rem] border border-dashed border-ink-200">
-              <p className="text-sm text-ink-500">Nenhum lote criado ainda.</p>
+              <p className="text-sm text-ink-500">Nenhum álbum criado ainda.</p>
             </div>
           ) : (
             <div className="space-y-4">
@@ -138,10 +138,16 @@ export default function LotesPage() {
                   ) : (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-5">
-                        <div className="h-16 w-16 rounded-2xl bg-ink-900 flex items-center justify-center text-white font-black">{l.id}</div>
+                        <div
+                          onClick={() => router.push(`/lotes/${l.id}`)}
+                          className="h-16 w-16 rounded-2xl bg-ink-900 flex items-center justify-center text-white font-black cursor-pointer hover:bg-accent transition-colors"
+                        >{l.id}</div>
                         <div>
                           <div className="flex items-center gap-2">
-                            <h3 className="font-bold text-ink-900">{l.descricao}</h3>
+                            <button
+                              onClick={() => router.push(`/lotes/${l.id}`)}
+                              className="font-bold text-ink-900 hover:text-accent transition-colors text-left"
+                            >{l.descricao}</button>
                             {l.arquivado && <Badge tone="warning">Arquivado</Badge>}
                           </div>
                           <p className="mt-1 text-[12px] text-ink-500">

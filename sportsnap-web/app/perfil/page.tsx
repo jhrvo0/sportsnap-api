@@ -39,6 +39,14 @@ export default function PerfilPage() {
     }
   }, [sessao]);
 
+  // Recarrega ao voltar para a aba/página
+  useEffect(() => {
+    if (!sessao || sessao.role !== "fotografo") return;
+    const onFocus = () => carregarDadosFotografo();
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
+  }, [sessao]);
+
   async function carregarLicencasAtleta() {
     if (!sessao) return;
     try {
@@ -189,9 +197,18 @@ export default function PerfilPage() {
       ) : (
         <div className="space-y-6">
           {/* Métricas do dashboard — dados reais do backend */}
+          <div className="flex items-center justify-between mb-1">
+            <p className="text-sm font-semibold text-ink-500">Dashboard em tempo real</p>
+            <button
+              onClick={carregarDadosFotografo}
+              className="text-xs font-bold text-accent hover:underline"
+            >
+              ↻ Atualizar
+            </button>
+          </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="rounded-[2rem] bg-ink-900 text-white p-6 shadow-xl">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-accent mb-2">Lotes</p>
+              <p className="text-[10px] font-bold uppercase tracking-widest text-accent mb-2">Álbuns</p>
               <p className="text-4xl font-black">{dashboard?.totalLotes ?? "—"}</p>
               <p className="text-ink-400 text-sm mt-1">álbuns criados</p>
             </div>
@@ -220,7 +237,7 @@ export default function PerfilPage() {
           </div>
 
           {/* Galeria de fotos do fotógrafo */}
-          <Card title="Minhas Fotos" description="Todas as fotos publicadas nos seus lotes.">
+          <Card title="Minhas Fotos" description="Todas as fotos publicadas nos seus álbuns.">
             {fotosDoFotografo.length === 0 ? (
               <div className="py-16 text-center bg-ink-50 rounded-[2rem] border border-dashed border-ink-200">
                 <p className="text-sm font-medium text-ink-500">Você ainda não publicou nenhuma foto.</p>
@@ -247,7 +264,9 @@ export default function PerfilPage() {
                     <div className="absolute top-2 right-2">
                       {f.licenciada
                         ? <span className="text-[10px] font-bold bg-emerald-500 text-white px-2 py-0.5 rounded-full">Vendida</span>
-                        : <span className="text-[10px] font-bold bg-white/80 text-ink-700 px-2 py-0.5 rounded-full backdrop-blur">À venda</span>}
+                        : f.disponivel
+                          ? <span className="text-[10px] font-bold bg-white/80 text-ink-700 px-2 py-0.5 rounded-full backdrop-blur">À venda</span>
+                          : <span className="text-[10px] font-bold bg-amber-400 text-white px-2 py-0.5 rounded-full">Indisponível</span>}
                     </div>
                     <div className="p-3 flex items-center justify-between">
                       <div>
@@ -271,7 +290,7 @@ export default function PerfilPage() {
             <div onClick={() => router.push("/lotes")} className="rounded-[2rem] bg-white p-6 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] cursor-pointer border border-ink-100">
               <div className="h-12 w-12 rounded-full bg-accent/10 flex items-center justify-center text-xl mb-4">📁</div>
               <p className="text-[11px] font-bold uppercase tracking-widest text-ink-400 mb-1">Gestão</p>
-              <h3 className="text-xl font-bold text-ink-900">Meus Lotes</h3>
+              <h3 className="text-xl font-bold text-ink-900">Meus Álbuns</h3>
               <p className="text-sm text-ink-500 mt-2">Crie, edite e arquive álbuns por sessão e local.</p>
             </div>
             <div onClick={() => router.push("/upload")} className="rounded-[2rem] bg-white p-6 shadow-sm transition-all hover:shadow-md hover:scale-[1.02] cursor-pointer border border-ink-100">

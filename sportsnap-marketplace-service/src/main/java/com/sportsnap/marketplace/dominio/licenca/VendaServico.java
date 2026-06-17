@@ -68,11 +68,12 @@ public class VendaServico {
             licenca = new LicencaDeImagem(atletaId, fotoId, Dinheiro.ZERO, true);
             salva = licencaRepositorio.salvar(licenca);
         } else {
-            licenca = new LicencaDeImagem(atletaId, fotoId, PRECO_PADRAO, false);
+            var precoFoto = foto.getPreco();
+            licenca = new LicencaDeImagem(atletaId, fotoId, precoFoto, false);
             salva = licencaRepositorio.salvar(licenca);
 
-            var valorFotografo = PRECO_PADRAO.multiplicar(PERCENTUAL_FOTOGRAFO);
-            var taxaPlataforma = PRECO_PADRAO.multiplicar(PERCENTUAL_PLATAFORMA);
+            var valorFotografo = precoFoto.multiplicar(PERCENTUAL_FOTOGRAFO);
+            var taxaPlataforma = precoFoto.multiplicar(PERCENTUAL_PLATAFORMA);
             split = new SplitFinanceiro(salva.getId(), valorFotografo, taxaPlataforma);
             splitRepositorio.salvar(split);
         }

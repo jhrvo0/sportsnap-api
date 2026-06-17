@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
-import { listarLotes, listarFotos, uploadFotos, removerFoto, type LoteDto, type FotoDto } from "@/lib/marketplace";
+import { listarLotes, listarFotos, uploadFotos, removerFoto, definirPreco, disponibilizar, indisponibilizar, type LoteDto, type FotoDto } from "@/lib/marketplace";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
@@ -84,7 +84,7 @@ function UploadPageContent() {
   async function enviar(e: React.FormEvent) {
     e.preventDefault();
     setErro(null); setAviso(null);
-    if (!loteId) { setErro("Selecione um lote."); return; }
+    if (!loteId) { setErro("Selecione um álbum."); return; }
     if (!previews.length) { setErro("Selecione ao menos uma imagem."); return; }
     setUploading(true);
     try {
@@ -103,6 +103,29 @@ function UploadPageContent() {
     catch { setErro("Erro ao remover foto."); }
   }
 
+  async function alterarPreco(id: number, novoPreco: string) {
+    const valor = parseFloat(novoPreco.replace(",", "."));
+    if (isNaN(valor) || valor <= 0) { setErro("Preço inválido."); return; }
+    try {
+      await definirPreco(id, valor);
+      setAviso(`Preço da foto #${id} atualizado.`);
+      if (loteId) listarFotos(parseInt(loteId)).then(setFotos);
+    } catch { setErro("Erro ao atualizar preço."); }
+  }
+
+  async function toggleDisponivel(foto: FotoDto) {
+    try {
+      if (foto.disponivel) {
+        await indisponibilizar(foto.id);
+        setAviso(`Foto #${foto.id} removida do marketplace.`);
+      } else {
+        await disponibilizar(foto.id);
+        setAviso(`Foto #${foto.id} disponibilizada no marketplace.`);
+      }
+      if (loteId) listarFotos(parseInt(loteId)).then(setFotos);
+    } catch { setErro("Erro ao alterar disponibilidade."); }
+  }
+
   if (!sessao) return null;
 
   return (
@@ -115,7 +138,7 @@ function UploadPageContent() {
         <Card title="Enviar Fotos">
           <form onSubmit={enviar} className="space-y-5">
             <Select label="Álbum de Destino" value={loteId} onChange={(e) => { setLoteId(e.target.value); setPreviews([]); }} required>
-              <option value="">Selecione um lote ativo...</option>
+              <option value="">Selecione um álbum ativo...</option>
               {lotes.filter(l => !l.arquivado).map(l => <option key={l.id} value={l.id}>{l.descricao}</option>)}
             </Select>
 
@@ -161,12 +184,12 @@ function UploadPageContent() {
         <Card title={`Fotos do Álbum (${fotos.length})`}>
           {!loteId ? (
             <div className="py-20 text-center bg-ink-50 rounded-[2rem] border border-dashed border-ink-200">
-              <p className="text-sm text-ink-500">Selecione um lote para ver as fotos.</p>
+              <p className="text-sm text-ink-500">Selecione um álbum para ver as fotos.</p>
             </div>
           ) : fotos.length === 0 ? (
             <div className="py-20 text-center bg-ink-50 rounded-[2rem] border border-dashed border-ink-200">
               <span className="text-4xl opacity-20 block mb-4">📷</span>
-              <p className="text-sm text-ink-500">Este lote ainda está vazio.</p>
+              <p className="text-sm text-ink-500">Este álbum ainda está vazio.</p>
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
@@ -182,10 +205,43 @@ function UploadPageContent() {
                       <p className="text-sm font-medium">{new Date(f.exifTimestamp).toLocaleString("pt-BR")}</p>
                     </div>
                   </div>
-                  <div className="p-4 flex items-center justify-between">
-                    <p className="text-[11px] text-ink-400 font-mono">{f.exifDetalhes}</p>
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-[11px] text-ink-400 font-mono">ID #{f.id}</p>
+                      <div className="flex items-center gap-2">
+                        {!f.licenciada && (
+                          <button
+                            onClick={() => toggleDisponivel(f)}
+                            className={`text-[11px] font-bold px-2 py-0.5 rounded-full transition-colors ${f.disponivel ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200" : "bg-ink-100 text-ink-400 hover:bg-ink-200"}`}
+                          >
+                            {f.disponivel ? "Disponível" : "Indisponível"}
+                          </button>
+                        )}
+                        {!f.licenciada && (
+                          <Button size="sm" variant="ghost" className="text-rose-500" onClick={() => remover(f.id)}>Remover</Button>
+                        )}
+                      </div>
+                    </div>
                     {!f.licenciada && (
-                      <Button size="sm" variant="ghost" className="text-rose-500" onClick={() => remover(f.id)}>Remover</Button>
+                      <div className="flex items-center gap-2">
+                        <span className="text-[11px] text-ink-500 font-medium">R$</span>
+                        <input
+                          type="number"
+                          defaultValue={f.preco ?? 29.90}
+                          step="0.01"
+                          min="0.01"
+                          className="w-24 text-sm font-bold border border-ink-200 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                          onBlur={(e) => {
+                            if (e.target.value !== String(f.preco)) {
+                              alterarPreco(f.id, e.target.value);
+                            }
+                          }}
+                        />
+                        <span className="text-[11px] text-ink-400">preço</span>
+                      </div>
+                    )}
+                    {f.licenciada && (
+                      <p className="text-[11px] text-emerald-600 font-medium">Vendida — não pode ser alterada</p>
                     )}
                   </div>
                 </div>
