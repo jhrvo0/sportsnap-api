@@ -5,14 +5,31 @@ type Props = {
 };
 
 const tones = {
-  info: "bg-accent/10 text-accent-700",
-  success: "bg-emerald-100 text-emerald-700",
-  danger: "bg-rose-100 text-rose-700",
-  warning: "bg-amber-100 text-amber-700",
+  info: "bg-accent/5 text-accent-700 border-accent/10",
+  success: "bg-emerald-50 text-emerald-700 border-emerald-100",
+  danger: "bg-rose-50 text-rose-700 border-rose-100",
+  warning: "bg-amber-50 text-amber-700 border-amber-100",
 };
 
+const icons = {
+  info: "ⓘ",
+  success: "✓",
+  danger: "⚠",
+  warning: "!",
+};
+
+/**
+ * Alert inline padronizado com borda e ícone discreto.
+ * API (tone/children/className) preservada.
+ */
 export function Alert({ tone = "info", children, className = "" }: Props) {
   return (
-    <div className={`mb-6 rounded-2xl px-4 py-3 text-sm ${tones[tone]} ${className}`}>{children}</div>
+    <div
+      role="alert"
+      className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm font-medium ${tones[tone]} ${className}`}
+    >
+      <span aria-hidden className="mt-0.5 shrink-0 font-black">{icons[tone]}</span>
+      <div className="min-w-0 flex-1">{children}</div>
+    </div>
   );
 }

@@ -46,6 +46,16 @@ public class DadosIniciais implements CommandLineRunner {
             new Coordenada(-8.0476, -34.8770),
             "Pista de skate em Recife"));
 
+        spotRepositorio.salvar(new Spot(
+            "Campo do Retiro",
+            new Coordenada(-23.5505, -46.6333),
+            "Campo society com gramado sintético. Ideal para rachões e treinos táticos."));
+
+        spotRepositorio.salvar(new Spot(
+            "Ciclovia da Orla",
+            new Coordenada(-22.9110, -43.1726),
+            "Ciclovia extensa ao longo da orla carioca. Ótima para pedais longos."));
+
         var agora = LocalDateTime.now();
 
         sessaoRepositorio.salvar(new Sessao(

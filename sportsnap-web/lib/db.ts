@@ -181,9 +181,24 @@ const INITIAL_DATA: DBData = {
     { id: 232, checkInId: 7, atletaId: 2, sport: "caminhada", duracao: 50, intensidade: "baixa", xpGanho: 30,  data: new Date(Date.now() - 10 * 864e5).toISOString().slice(0,19), distancia: 4.0, esforcoPercebido: 2, origemRegistro: "CHECKIN", metricas: { distancia: 4.0, velocidadeMax: 95  } },
     { id: 233, checkInId: 8, atletaId: 2, sport: "caminhada", duracao: 35, intensidade: "baixa", xpGanho: 20,  data: new Date(Date.now() -  3 * 864e5).toISOString().slice(0,19), distancia: 3.0, esforcoPercebido: 2, origemRegistro: "CHECKIN", metricas: { distancia: 3.0, velocidadeMax: 75  } }
   ],
-  lotes: [],
-  fotos: [],
-  licencas: [],
+  lotes: [
+    { id: 1, fotografoId: 2, sessaoId: 2, spotId: 2, descricao: "Manobras na Costeira", criadoEm: "2026-06-08T15:00:00Z", arquivado: false },
+    { id: 2, fotografoId: 2, sessaoId: 4, spotId: 3, descricao: "Sprint no Aterro", criadoEm: "2026-06-08T08:00:00Z", arquivado: false },
+    { id: 3, fotografoId: 2, sessaoId: 8, spotId: 1, descricao: "Session Especial Stella Maris", criadoEm: "2026-06-18T10:00:00Z", arquivado: false },
+    { id: 4, fotografoId: 2, sessaoId: 9, spotId: 3, descricao: "Super Sábado Aterro", criadoEm: "2026-06-20T10:00:00Z", arquivado: false }
+  ],
+  fotos: [
+    { id: 1, loteId: 1, urlPreview: "https://images.unsplash.com/photo-1564982722483-425a8944b0f7?w=600&auto=format&fit=crop&q=60", urlOriginal: "https://images.unsplash.com/photo-1564982722483-425a8944b0f7", exifTimestamp: "2026-06-08T14:30:00Z", exifDetalhes: "Aperture f/2.8, Shutter 1/1000s, ISO 400", licenciada: false, removida: false, preco: 35.0, disponivel: true },
+    { id: 2, loteId: 1, urlPreview: "https://images.unsplash.com/photo-1520156473893-b4241743d150?w=600&auto=format&fit=crop&q=60", urlOriginal: "https://images.unsplash.com/photo-1520156473893-b4241743d150", exifTimestamp: "2026-06-08T15:15:00Z", exifDetalhes: "Aperture f/4.0, Shutter 1/800s, ISO 200", licenciada: true, removida: false, preco: 40.0, disponivel: true },
+    { id: 3, loteId: 2, urlPreview: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?w=600&auto=format&fit=crop&q=60", urlOriginal: "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8", exifTimestamp: "2026-06-08T06:45:00Z", exifDetalhes: "Aperture f/1.8, Shutter 1/2000s, ISO 100", licenciada: false, removida: false, preco: 29.90, disponivel: true },
+    { id: 4, loteId: 3, urlPreview: "https://images.unsplash.com/photo-1502680390469-be75c86b636f?w=600&auto=format&fit=crop&q=60", urlOriginal: "https://images.unsplash.com/photo-1502680390469-be75c86b636f", exifTimestamp: "2026-06-18T10:30:00Z", exifDetalhes: "Aperture f/2.8, Shutter 1/1600s, ISO 200", licenciada: false, removida: false, preco: 45.0, disponivel: true },
+    { id: 5, loteId: 3, urlPreview: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=600&auto=format&fit=crop&q=60", urlOriginal: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3", exifTimestamp: "2026-06-18T10:45:00Z", exifDetalhes: "Aperture f/3.2, Shutter 1/1200s, ISO 400", licenciada: false, removida: false, preco: 39.90, disponivel: true },
+    { id: 6, loteId: 4, urlPreview: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=600&auto=format&fit=crop&q=60", urlOriginal: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2", exifTimestamp: "2026-06-20T09:30:00Z", exifDetalhes: "Aperture f/2.0, Shutter 1/1500s, ISO 160", licenciada: false, removida: false, preco: 49.90, disponivel: true },
+    { id: 7, loteId: 4, urlPreview: "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600&auto=format&fit=crop&q=60", urlOriginal: "https://images.unsplash.com/photo-1517649763962-0c623066013b", exifTimestamp: "2026-06-20T11:15:00Z", exifDetalhes: "Aperture f/2.8, Shutter 1/1000s, ISO 200", licenciada: false, removida: false, preco: 39.90, disponivel: true }
+  ],
+  licencas: [
+    { id: 1, atletaId: 1, fotoId: 2, preco: 40.0, adquiridaEm: "2026-06-08T16:00:00Z", cancelada: false }
+  ],
   atletas: [
     { id: 1, nome: "Maria Atleta", email: "maria@email.com" },
     { id: 2, nome: "Joao Silva",   email: "joao@email.com"  }
@@ -224,13 +239,24 @@ function clonarDadosIniciais(): DBData {
   const dados = JSON.parse(JSON.stringify(INITIAL_DATA)) as DBData;
   const dataRelativa = (horas: number) => new Date(Date.now() + horas * 60 * 60 * 1000).toISOString();
 
+  const obterSabadoDaSemana = (hora: number) => {
+    const agora = new Date();
+    const diaSemana = agora.getDay();
+    const diff = 6 - diaSemana;
+    const sabado = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate() + diff);
+    sabado.setHours(Math.floor(hora), Math.floor((hora % 1) * 60), 0, 0);
+    return sabado.toISOString();
+  };
+
   dados.sessoes = [
     { id: 1, spotId: 1, periodoInicio: dataRelativa(-120), periodoFim: dataRelativa(-116), descricao: "Swell de Inverno - Stella" },
     { id: 2, spotId: 2, periodoInicio: dataRelativa(-2),   periodoFim: dataRelativa(4),    descricao: "Sessão Livre - Costeira" },
     { id: 3, spotId: 3, periodoInicio: dataRelativa(24),   periodoFim: dataRelativa(27),   descricao: "Treino Noturno 10k" },
     { id: 4, spotId: 3, periodoInicio: dataRelativa(-1),   periodoFim: dataRelativa(3),    descricao: "Corrida Matinal - Aterro" },
     { id: 6, spotId: 4, periodoInicio: dataRelativa(-48),  periodoFim: dataRelativa(-44),  descricao: "Rachão Semanal - Campo do Retiro" },
-    { id: 7, spotId: 5, periodoInicio: dataRelativa(-2),   periodoFim: dataRelativa(2),    descricao: "Pedal Matinal - Orla" }
+    { id: 7, spotId: 5, periodoInicio: dataRelativa(-2),   periodoFim: dataRelativa(2),    descricao: "Pedal Matinal - Orla" },
+    { id: 8, spotId: 1, periodoInicio: dataRelativa(-1),   periodoFim: dataRelativa(3),    descricao: "Treino Especial de Teste Agora" },
+    { id: 9, spotId: 3, periodoInicio: obterSabadoDaSemana(9), periodoFim: obterSabadoDaSemana(21), descricao: "Super Treino de Sábado - Aterro" }
   ];
 
   dados.checkins = [
@@ -241,8 +267,27 @@ function clonarDadosIniciais(): DBData {
     { id: 5, atletaId: 2, sessaoId: 6, horario: dataRelativa(-47),  checkoutHorario: dataRelativa(-44), cancelado: false, temAtividade: true },
     { id: 6, atletaId: 2, sessaoId: 7, horario: dataRelativa(-1),   checkoutHorario: dataRelativa(2),   cancelado: false, temAtividade: true },
     { id: 7, atletaId: 2, sessaoId: 3, horario: dataRelativa(24),   cancelado: false, temAtividade: true },
-    { id: 8, atletaId: 2, sessaoId: 4, horario: dataRelativa(-1),   cancelado: false, temAtividade: true }
+    { id: 8, atletaId: 2, sessaoId: 4, horario: dataRelativa(-1),   cancelado: false, temAtividade: true },
+    { id: 9, atletaId: 1, sessaoId: 9, horario: obterSabadoDaSemana(9.5), checkoutHorario: obterSabadoDaSemana(11.5), cancelado: false, temAtividade: true },
+    { id: 10, atletaId: 2, sessaoId: 9, horario: obterSabadoDaSemana(15), checkoutHorario: obterSabadoDaSemana(17), cancelado: false, temAtividade: true }
   ];
+
+  dados.atividades = [
+    ...dados.atividades,
+    { id: 300, checkInId: 9, atletaId: 1, sport: "corrida", duracao: 90, intensidade: "media", xpGanho: 100, data: obterSabadoDaSemana(10), distancia: 8.5, origemRegistro: "CHECKIN", esforcoPercebido: 6, metricas: { distancia: 8.5 } },
+    { id: 301, checkInId: 10, atletaId: 2, sport: "futebol", duracao: 120, intensidade: "alta", xpGanho: 200, data: obterSabadoDaSemana(16), distancia: 9.8, origemRegistro: "CHECKIN", esforcoPercebido: 8, metricas: { gols: 2, assistencias: 1, distancia: 9.8 } }
+  ];
+
+  dados.fotos = dados.fotos.map(f => {
+    if (f.id === 1) return { ...f, exifTimestamp: dataRelativa(-1.5) };
+    if (f.id === 2) return { ...f, exifTimestamp: dataRelativa(-1) };
+    if (f.id === 3) return { ...f, exifTimestamp: dataRelativa(-0.5) };
+    if (f.id === 4) return { ...f, exifTimestamp: dataRelativa(0) };
+    if (f.id === 5) return { ...f, exifTimestamp: dataRelativa(1) };
+    if (f.id === 6) return { ...f, exifTimestamp: obterSabadoDaSemana(16) };
+    if (f.id === 7) return { ...f, exifTimestamp: obterSabadoDaSemana(10) };
+    return f;
+  });
 
   return dados;
 }
@@ -250,12 +295,25 @@ function clonarDadosIniciais(): DBData {
 function normalizarDados(data: Partial<DBData>): DBData {
   const base = clonarDadosIniciais();
 
-  // Merge inteligente de atividades: mantém as mockadas do seed + adiciona novas salvas pelo usuário
-  if (data.atividades && data.atividades.length > 0) {
-    const baseIds = new Set(base.atividades.map((a: any) => a.id));
-    const novas = data.atividades.filter((a: any) => !baseIds.has(a.id));
-    data = { ...data, atividades: [...base.atividades, ...novas] };
-  }
+  const idsPadroesSessoes = new Set(base.sessoes.map(s => s.id));
+  const sessoesUsuario = (data.sessoes || []).filter(s => !idsPadroesSessoes.has(s.id));
+  data.sessoes = [...base.sessoes, ...sessoesUsuario];
+
+  const idsPadroesCheckins = new Set(base.checkins.map(c => c.id));
+  const checkinsUsuario = (data.checkins || []).filter(c => !idsPadroesCheckins.has(c.id));
+  data.checkins = [...base.checkins, ...checkinsUsuario];
+
+  const idsPadroesLotes = new Set(base.lotes.map(l => l.id));
+  const lotesUsuario = (data.lotes || []).filter(l => !idsPadroesLotes.has(l.id));
+  data.lotes = [...base.lotes, ...lotesUsuario];
+
+  const idsPadroesFotos = new Set(base.fotos.map(f => f.id));
+  const fotosUsuario = (data.fotos || []).filter(f => !idsPadroesFotos.has(f.id));
+  data.fotos = [...base.fotos, ...fotosUsuario];
+
+  const idsPadroesAtividades = new Set(base.atividades.map(a => a.id));
+  const atividadesUsuario = (data.atividades || []).filter(a => !idsPadroesAtividades.has(a.id));
+  data.atividades = [...base.atividades, ...atividadesUsuario];
 
   const normalizado = { ...base, ...data };
   normalizado.shadowStats = normalizado.shadowStats.map((stats) => ({
@@ -301,6 +359,10 @@ class SportSnapDB {
     if (typeof window !== "undefined") {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(this.data));
     }
+  }
+
+  getDefaultSpots(): Spot[] {
+    return INITIAL_DATA.spots;
   }
 
   // Consultas genéricas
@@ -394,6 +456,19 @@ class SportSnapDB {
     
     this.save();
     return true;
+  }
+
+  comprarLicenca(atletaId: number, fotoId: number): Licenca {
+    const licenca = this.add("licencas", {
+      atletaId,
+      fotoId,
+      preco: 29.90,
+      adquiridaEm: new Date().toISOString(),
+      cancelada: false
+    });
+    
+    this.update("fotos", fotoId, { licenciada: true });
+    return licenca;
   }
 
   getRankedCartas(): CartaResumo[] {

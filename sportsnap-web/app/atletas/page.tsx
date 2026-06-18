@@ -221,7 +221,7 @@ export default function DashboardAtleta() {
                   <div>
                     <h4 className="font-semibold text-ink-900">{s.descricao}</h4>
                     <p className="text-[12px] text-ink-500">
-                      {spots.find(sp => sp.id === s.spotId)?.nome} · {new Date(s.periodoInicio).toLocaleDateString("pt-BR")}
+                      {(spots.find(sp => sp.id === s.spotId) || db.getDefaultSpots().find(sp => sp.id === s.spotId))?.nome} · {new Date(s.periodoInicio).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
                   <Button size="sm" variant="ghost" onClick={() => router.push("/checkin")}>Check-in</Button>
