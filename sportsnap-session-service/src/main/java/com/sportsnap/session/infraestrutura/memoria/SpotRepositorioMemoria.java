@@ -45,6 +45,13 @@ public class SpotRepositorioMemoria implements SpotRepositorio {
     }
 
     @Override
+    public void remover(SpotId id) {
+        if (id != null) {
+            armazem.remove(id.getId());
+        }
+    }
+
+    @Override
     public void limpar() {
         armazem.clear();
         sequencia.set(1);

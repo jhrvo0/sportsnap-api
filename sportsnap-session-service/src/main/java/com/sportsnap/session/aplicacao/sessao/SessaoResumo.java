@@ -8,4 +8,5 @@ public interface SessaoResumo {
     LocalDateTime getPeriodoInicio();
     LocalDateTime getPeriodoFim();
     String getDescricao();
+    boolean isCancelada();
 }

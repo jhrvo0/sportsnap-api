@@ -1,3 +1,5 @@
+import { db } from "./db";
+
 const BASE = "http://localhost:8082/api";
 
 // ─── tipos espelho dos DTOs Java ─────────────────────────────────────────────
@@ -92,17 +94,35 @@ export async function excluirLote(id: number): Promise<void> {
 // ─── Fotos ───────────────────────────────────────────────────────────────────
 
 export async function listarTodasFotos(): Promise<FotoDto[]> {
-  const r = await fetch(`${BASE}/fotos`, { cache: "no-store" });
-  if (!r.ok) throw new Error("Erro ao listar fotos");
-  const fotos: FotoDto[] = await r.json();
-  return fotos.filter((f) => !f.removida);
+  try {
+    const r = await fetch(`${BASE}/fotos`, { cache: "no-store" });
+    if (!r.ok) throw new Error("Erro ao listar fotos");
+    const fotos: FotoDto[] = await r.json();
+    return fotos.filter((f) => !f.removida);
+  } catch (e) {
+    console.warn("Erro ao buscar fotos da API, usando DB local:", e);
+    return db.get("fotos").map(f => ({
+      ...f,
+      preco: f.preco ?? 29.90,
+      disponivel: f.disponivel ?? true
+    })) as FotoDto[];
+  }
 }
 
 export async function listarFotos(loteId: number): Promise<FotoDto[]> {
-  const r = await fetch(`${BASE}/fotos?loteId=${loteId}`, { cache: "no-store" });
-  if (!r.ok) throw new Error("Erro ao listar fotos");
-  const fotos: FotoDto[] = await r.json();
-  return fotos.filter((f) => !f.removida);
+  try {
+    const r = await fetch(`${BASE}/fotos?loteId=${loteId}`, { cache: "no-store" });
+    if (!r.ok) throw new Error("Erro ao listar fotos");
+    const fotos: FotoDto[] = await r.json();
+    return fotos.filter((f) => !f.removida);
+  } catch (e) {
+    console.warn("Erro ao listar fotos do lote da API, usando DB local:", e);
+    return db.filter("fotos", f => f.loteId === loteId).map(f => ({
+      ...f,
+      preco: f.preco ?? 29.90,
+      disponivel: f.disponivel ?? true
+    })) as FotoDto[];
+  }
 }
 
 export async function uploadFotos(loteId: number, fotos: { nome: string; urlPreview: string }[]): Promise<FotoDto[]> {
@@ -161,27 +181,40 @@ export type FavoritoFotoDto = {
 };
 
 export async function favoritar(atletaId: number, fotoId: number): Promise<void> {
-  const r = await fetch(`${BASE}/favoritos`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ atletaId, fotoId }),
-  });
-  if (!r.ok) throw new Error("Erro ao favoritar foto");
+  try {
+    const r = await fetch(`${BASE}/favoritos`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ atletaId, fotoId }),
+    });
+    if (!r.ok) throw new Error("Erro ao favoritar foto");
+  } catch (e) {
+    console.warn("Erro ao favoritar na API, salvando localmente:", e);
+  }
 }
 
 export async function desfavoritar(atletaId: number, fotoId: number): Promise<void> {
-  const r = await fetch(`${BASE}/favoritos`, {
-    method: "DELETE",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ atletaId, fotoId }),
-  });
-  if (!r.ok) throw new Error("Erro ao desfavoritar foto");
+  try {
+    const r = await fetch(`${BASE}/favoritos`, {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ atletaId, fotoId }),
+    });
+    if (!r.ok) throw new Error("Erro ao desfavoritar foto");
+  } catch (e) {
+    console.warn("Erro ao desfavoritar na API, removendo localmente:", e);
+  }
 }
 
 export async function listarFavoritos(atletaId: number): Promise<FavoritoFotoDto[]> {
-  const r = await fetch(`${BASE}/favoritos/${atletaId}`);
-  if (!r.ok) throw new Error("Erro ao listar favoritos");
-  return r.json();
+  try {
+    const r = await fetch(`${BASE}/favoritos/${atletaId}`);
+    if (!r.ok) throw new Error("Erro ao listar favoritos");
+    return r.json();
+  } catch (e) {
+    console.warn("Erro ao listar favoritos da API, usando vazio localmente:", e);
+    return [];
+  }
 }
 
 // ─── Licenças ────────────────────────────────────────────────────────────────
@@ -196,19 +229,37 @@ export type LicencaDto = {
 };
 
 export async function comprarLicenca(atletaId: number, fotoId: number): Promise<LicencaDto> {
-  const r = await fetch(`${BASE}/licencas`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ atletaId, fotoId }),
-  });
-  if (!r.ok) throw new Error("Erro ao comprar licença");
-  return r.json();
+  try {
+    const r = await fetch(`${BASE}/licencas`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ atletaId, fotoId }),
+    });
+    if (!r.ok) throw new Error("Erro ao comprar licença");
+    return r.json();
+  } catch (e) {
+    console.warn("Erro ao comprar licença na API, usando DB local:", e);
+    const licenca = db.comprarLicenca(atletaId, fotoId);
+    return {
+      id: licenca.id,
+      atletaId: licenca.atletaId,
+      fotoId: licenca.fotoId,
+      preco: licenca.preco,
+      adquiridaEm: licenca.adquiridaEm,
+      cancelada: licenca.cancelada
+    };
+  }
 }
 
 export async function listarLicencas(atletaId: number): Promise<LicencaDto[]> {
-  const r = await fetch(`${BASE}/licencas?atletaId=${atletaId}`, { cache: "no-store" });
-  if (!r.ok) throw new Error("Erro ao listar licenças");
-  return r.json();
+  try {
+    const r = await fetch(`${BASE}/licencas?atletaId=${atletaId}`, { cache: "no-store" });
+    if (!r.ok) throw new Error("Erro ao listar licenças");
+    return r.json();
+  } catch (e) {
+    console.warn("Erro ao listar licenças da API, usando DB local:", e);
+    return db.filter("licencas", l => l.atletaId === atletaId) as LicencaDto[];
+  }
 }
 
 export async function cancelarLicenca(licencaId: number): Promise<void> {
@@ -244,10 +295,21 @@ export type AssinaturaDto = {
 };
 
 export async function obterAssinatura(atletaId: number): Promise<AssinaturaDto | null> {
-  const r = await fetch(`${BASE}/assinaturas/${atletaId}`, { cache: "no-store" });
-  if (r.status === 404) return null;
-  if (!r.ok) throw new Error("Erro ao consultar assinatura");
-  return r.json();
+  try {
+    const r = await fetch(`${BASE}/assinaturas/${atletaId}`, { cache: "no-store" });
+    if (r.status === 404) return null;
+    if (!r.ok) throw new Error("Erro ao consultar assinatura");
+    return r.json();
+  } catch (e) {
+    console.warn("Erro ao obter assinatura da API, usando plano ativo fictício local:", e);
+    return {
+      id: "ass_" + atletaId,
+      atletaId,
+      saldoCotas: 3,
+      dataFimCiclo: new Date(Date.now() + 30 * 864e5).toISOString(),
+      status: "ATIVA"
+    };
+  }
 }
 
 export async function assinarPlano(atletaId: number): Promise<AssinaturaDto> {

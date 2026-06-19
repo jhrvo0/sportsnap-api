@@ -6,13 +6,19 @@ type Props = ComponentPropsWithoutRef<"section"> & {
   children: React.ReactNode;
 };
 
+/**
+ * Card/superfície padronizado. Raio unificado (rounded-3xl) em todo o app.
+ * API (title/description/children/className/props) preservada.
+ */
 export function Card({ title, description, children, className = "", ...props }: Props) {
   return (
-    <section className={`surface rounded-[2.5rem] p-8 ${className}`} {...props}>
+    <section className={`surface rounded-3xl p-6 sm:p-8 ${className}`} {...props}>
       {(title || description) && (
         <div className="mb-6">
-          {title && <h2 className="text-xl font-black text-ink-900 leading-tight">{title}</h2>}
-          {description && <p className="mt-1.5 text-[13px] font-medium text-ink-500 leading-relaxed">{description}</p>}
+          {title && <h2 className="text-xl font-black leading-tight text-ink-900">{title}</h2>}
+          {description && (
+            <p className="mt-1.5 text-[13px] font-medium leading-relaxed text-ink-500">{description}</p>
+          )}
         </div>
       )}
       {children}

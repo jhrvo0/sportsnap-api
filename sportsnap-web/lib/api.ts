@@ -33,6 +33,8 @@ export type Foto = {
   exifDetalhes: string;
   licenciada: boolean;
   removida: boolean;
+  preco?: number;
+  disponivel?: boolean;
 };
 export type Licenca = {
   id: number;

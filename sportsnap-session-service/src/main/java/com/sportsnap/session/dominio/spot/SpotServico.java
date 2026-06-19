@@ -27,4 +27,16 @@ public class SpotServico {
     public List<Spot> listarTodos() {
         return repositorio.listarTodos();
     }
+
+    public Spot atualizar(SpotId id, String nome, Coordenada coordenada, String descricao) {
+        notNull(id, "O id do Spot nao pode ser nulo");
+        var existente = obter(id);
+        var atualizado = new Spot(existente.getId(), nome, coordenada, descricao);
+        return repositorio.salvar(atualizado);
+    }
+
+    public void remover(SpotId id) {
+        notNull(id, "O id do Spot nao pode ser nulo");
+        repositorio.remover(id);
+    }
 }

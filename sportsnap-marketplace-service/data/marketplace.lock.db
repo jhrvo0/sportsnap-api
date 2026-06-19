@@ -1,0 +1,6 @@
+#FileLock
+#Tue Jun 16 22:30:05 BRT 2026
+hostName=192.168.15.14
+id=19ed3331e0085cc2edaaae0b5c17356827bf9e6b791
+method=file
+server=192.168.15.14\:64964

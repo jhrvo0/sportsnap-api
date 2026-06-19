@@ -42,7 +42,7 @@ export default function DashboardAtleta() {
       setMeusCheckIns(checkins);
       
       const checkInIds = new Set(checkins.map(c => c.id));
-      const activities = db.filter("atividades", a => checkInIds.has(a.checkInId));
+      const activities = db.filter("atividades", a => a.checkInId ? checkInIds.has(a.checkInId) : false);
       setMinhasAtividades(activities);
     }
   }, [sessao]);
@@ -142,7 +142,7 @@ export default function DashboardAtleta() {
                   // Filter activities for this day
                   const dayCheckins = meusCheckIns.filter(c => new Date(c.horario).toDateString() === date.toDateString());
                   const dayCheckInIds = new Set(dayCheckins.map(c => c.id));
-                  const dayActivities = minhasAtividades.filter(a => dayCheckInIds.has(a.checkInId));
+                  const dayActivities = minhasAtividades.filter(a => a.checkInId ? dayCheckInIds.has(a.checkInId) : false);
                   const dayXP = dayActivities.reduce((acc, a) => acc + a.xpGanho, 0);
                   
                   const height = Math.min(100, (dayXP / 50) * 100); // Scale relative to 50 XP
@@ -189,7 +189,8 @@ export default function DashboardAtleta() {
                   <div className="flex gap-1 h-2 rounded-full overflow-hidden bg-ink-100">
                     {(() => {
                       const counts = minhasAtividades.reduce((acc, a) => {
-                        acc[a.intensidade] = (acc[a.intensidade] || 0) + 1;
+                        const key = a.intensidade || "media";
+                        acc[key] = (acc[key] || 0) + 1;
                         return acc;
                       }, { baixa: 0, media: 0, alta: 0 });
                       const total = Math.max(1, minhasAtividades.length);
@@ -220,7 +221,7 @@ export default function DashboardAtleta() {
                   <div>
                     <h4 className="font-semibold text-ink-900">{s.descricao}</h4>
                     <p className="text-[12px] text-ink-500">
-                      {spots.find(sp => sp.id === s.spotId)?.nome} · {new Date(s.periodoInicio).toLocaleDateString("pt-BR")}
+                      {(spots.find(sp => sp.id === s.spotId) || db.getDefaultSpots().find(sp => sp.id === s.spotId))?.nome} · {new Date(s.periodoInicio).toLocaleDateString("pt-BR")}
                     </p>
                   </div>
                   <Button size="sm" variant="ghost" onClick={() => router.push("/checkin")}>Check-in</Button>

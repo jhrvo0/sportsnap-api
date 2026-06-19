@@ -5,6 +5,12 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { db, CheckIn, RegistroAtividade, SportType, MetricaDefinition, CustomMetricaValue } from "@/lib/db";
 import { Sessao, Spot } from "@/lib/api";
+import {
+  registrarAtividade as apiRegistrarAtividade,
+  listarAtividades as apiListarAtividades,
+  atualizarAtividade as apiAtualizarAtividade,
+  RegistroAtividadeDto
+} from "@/lib/atividades";
 import { Card } from "@/components/Card";
 import { PageHeader } from "@/components/PageHeader";
 import { Button } from "@/components/Button";
@@ -13,16 +19,34 @@ import { Alert } from "@/components/Alert";
 import { Badge } from "@/components/Badge";
 import { DynamicMap } from "@/components/DynamicMap";
 import { Modal } from "@/components/Modal";
+import { SectionHeading } from "@/components/SectionHeading";
+import { Loading } from "@/components/StateView";
 import React from "react";
+import { 
+  listarSpots, 
+  listarSessoes, 
+  realizarCheckIn as apiRealizarCheckIn, 
+  listarCheckIns as apiListarCheckIns, 
+  cancelarCheckIn as apiCancelarCheckIn 
+} from "@/lib/spots";
 
 // --- Metric Templates Library ---
 const METRIC_TEMPLATES: MetricaDefinition[] = [
   { id: "waves", label: "Ondas Surfadas", unit: "ondas", sport: "surf" },
-  { id: "max_speed", label: "Velocidade Máxima", unit: "km/h", sport: "custom" },
   { id: "tricks", label: "Manobras Acertadas", unit: "manobras", sport: "skate" },
-  { id: "goals", label: "Gols / Assistências", unit: "gols", sport: "futebol" },
+  { id: "goals", label: "Gols", unit: "gols", sport: "futebol" },
+  { id: "assists", label: "Assistências", unit: "assistências", sport: "futebol" },
   { id: "distance", label: "Distância Percorrida", unit: "km", sport: "corrida" },
   { id: "pace", label: "Pace Médio", unit: "min/km", sport: "corrida" },
+  // Bicicleta
+  { id: "distance_cycling", label: "Distância Pedalada", unit: "km", sport: "bicicleta" },
+  { id: "speed_cycling", label: "Velocidade Média", unit: "km/h", sport: "bicicleta" },
+  // Caminhada
+  { id: "distance_walking", label: "Distância Caminhada", unit: "km", sport: "caminhada" },
+  { id: "elevation_gain", label: "Ganho de Elevação", unit: "m", sport: "caminhada" },
+  // Natação
+  { id: "distance_swimming", label: "Distância Nadada", unit: "m", sport: "natacao" },
+  { id: "laps_swimming", label: "Voltas", unit: "voltas", sport: "natacao" },
 ];
 
 export default function CheckinPage() {
@@ -35,6 +59,7 @@ export default function CheckinPage() {
   const [checkIns, setCheckIns] = useState<CheckIn[]>([]);
   const [atividades, setAtividades] = useState<RegistroAtividade[]>([]);
   const [customMetricasDisponiveis, setCustomMetricasDisponiveis] = useState<MetricaDefinition[]>([]);
+  const [customSports, setCustomSports] = useState<{ id: string; label: string }[]>([]);
 
   // UI States
   const [loading, setLoading] = useState(true);
@@ -56,9 +81,20 @@ export default function CheckinPage() {
   const [novaMetricaLabel, setNovaMetricaLabel] = useState("");
   const [novaMetricaUnit, setNovaMetricaUnit] = useState("");
   const [showAddCustom, setShowAddCustom] = useState(false);
+  const [editAtividadeId, setEditAtividadeId] = useState<number | null>(null);
+
+  // New sport creation form state
+  const [showAddSport, setShowAddSport] = useState(false);
+  const [novoEsporteNome, setNovoEsporteNome] = useState("");
+  const [novoEsporteEmoji, setNovoEsporteEmoji] = useState("");
 
   const [verCheckInId, setVerCheckInId] = useState<number | null>(null);
   const [erro, setErro] = useState<string | null>(null);
+
+  // Load custom sports on mount
+  useEffect(() => {
+    setCustomSports(db.getCustomSports());
+  }, []);
 
   useEffect(() => {
     if (!authLoading && !sessao) router.replace("/login");
@@ -67,14 +103,10 @@ export default function CheckinPage() {
   // Combined library of available metrics
   const allAvailableMetrics = [...METRIC_TEMPLATES, ...customMetricasDisponiveis];
 
-  // Auto-set default metrics when sport changes (only if active list is empty or sport changed manually)
+  // Auto-set default metrics when sport changes
   useEffect(() => {
     const defaults = METRIC_TEMPLATES.filter(m => m.sport === sport).map(m => m.id);
-    if (sport !== "custom") {
-      setActiveMetricIds(defaults);
-    } else {
-      setActiveMetricIds([]);
-    }
+    setActiveMetricIds(defaults);
   }, [sport]);
 
   useEffect(() => {
@@ -98,6 +130,35 @@ export default function CheckinPage() {
     setLoading(true);
     setErro(null);
 
+    try {
+      const sps = await listarSpots();
+      db.set("spots", sps);
+    } catch (e) {
+      console.warn("Erro ao buscar spots da API, usando DB local:", e);
+    }
+
+    try {
+      const sesss = await listarSessoes();
+      db.set("sessoes", sesss);
+    } catch (e) {
+      console.warn("Erro ao buscar sessoes da API, usando DB local:", e);
+    }
+
+    try {
+      const cks = await apiListarCheckIns(sessao.id);
+      const mappedCks = cks.map(c => ({
+        id: c.id!,
+        atletaId: c.atletaId,
+        sessaoId: c.sessaoId,
+        horario: c.horario ? c.horario.toString() : "",
+        cancelado: c.cancelado || false,
+        temAtividade: c.atividadeRegistrada || false
+      }));
+      db.set("checkins", mappedCks);
+    } catch (e) {
+      console.warn("Erro ao buscar checkins da API, usando DB local:", e);
+    }
+
     const s = db.get("sessoes");
     const sp = db.get("spots");
     setSpots(sp);
@@ -112,7 +173,35 @@ export default function CheckinPage() {
     setSessoesAtivas(active);
 
     setCheckIns(db.filter("checkins", c => c.atletaId === sessao.id));
-    setAtividades(db.get("atividades"));
+    
+    try {
+      const apiAtivs = await apiListarAtividades(sessao.id);
+      const mappedAtivs = apiAtivs.map(a => {
+        let parsedMetrics = [];
+        if (a.metricas) {
+          try {
+            parsedMetrics = JSON.parse(a.metricas);
+          } catch {}
+        }
+        return {
+          id: a.id!,
+          checkInId: a.checkInId!,
+          atletaId: a.atletaId || sessao.id,
+          sport: a.esporte.toLowerCase() as any,
+          duracao: Math.round(a.duracaoSegundos / 60),
+          intensidade: (a.intensidade?.toLowerCase() || "media") as any,
+          xpGanho: a.xpCalculado || 0,
+          metricas: {
+            distancia: a.distancia > 0 ? a.distancia : undefined,
+            custom: parsedMetrics
+          }
+        };
+      });
+      setAtividades(mappedAtivs);
+      db.set("atividades", mappedAtivs);
+    } catch (e) {
+      setAtividades(db.get("atividades"));
+    }
     
     const stats = db.getShadowStats(sessao.id);
     setCustomMetricasDisponiveis(stats.customMetricas || []);
@@ -138,15 +227,35 @@ export default function CheckinPage() {
       return;
     }
 
-    db.add("checkins", {
+    const payload = {
       atletaId: sessao.id,
       sessaoId: sessaoObj.id,
-      horario: new Date().toISOString(),
-      cancelado: false,
-      temAtividade: false
-    });
+      latitude: -23.5505,
+      longitude: -46.6333
+    };
 
-    setSuccessMessage(`Check-in confirmado na sessão "${sessaoObj.descricao}"!`);
+    try {
+      const checkinSalvoBackend = await apiRealizarCheckIn(payload);
+      db.add("checkins", {
+        id: checkinSalvoBackend.id!,
+        atletaId: sessao.id,
+        sessaoId: sessaoObj.id,
+        horario: checkinSalvoBackend.horario ? checkinSalvoBackend.horario.toString() : new Date().toISOString(),
+        cancelado: false,
+        temAtividade: false
+      } as any);
+      setSuccessMessage(`Check-in confirmado na sessão "${sessaoObj.descricao}"!`);
+    } catch (err) {
+      db.add("checkins", {
+        atletaId: sessao.id,
+        sessaoId: sessaoObj.id,
+        horario: new Date().toISOString(),
+        cancelado: false,
+        temAtividade: false
+      });
+      setSuccessMessage("Check-in confirmado localmente (offline).");
+    }
+
     carregar();
     setSaving(false);
   }
@@ -175,8 +284,14 @@ export default function CheckinPage() {
     }
     
     if (confirm("Tem certeza que deseja cancelar este check-in?")) {
-      db.update("checkins", checkInId, { cancelado: true });
-      setSuccessMessage("Check-in cancelado com sucesso.");
+      try {
+        await apiCancelarCheckIn(checkInId);
+        db.update("checkins", checkInId, { cancelado: true });
+        setSuccessMessage("Check-in cancelado com sucesso globalmente.");
+      } catch (err) {
+        db.update("checkins", checkInId, { cancelado: true });
+        setSuccessMessage("Check-in cancelado com sucesso localmente.");
+      }
       carregar();
     }
   }
@@ -188,7 +303,7 @@ export default function CheckinPage() {
       id: "custom_" + Math.random().toString(36).substr(2, 9),
       label: novaMetricaLabel,
       unit: novaMetricaUnit,
-      sport: "custom"
+      sport: sport // associate with currently selected sport
     };
     
     const stats = db.getShadowStats(sessao.id);
@@ -201,6 +316,18 @@ export default function CheckinPage() {
     setNovaMetricaLabel("");
     setNovaMetricaUnit("");
     setShowAddCustom(false);
+  }
+
+  function adicionarNovoEsporte() {
+    if (!novoEsporteNome.trim()) return;
+    const emoji = novoEsporteEmoji.trim() || "🏅";
+    const newId = db.addCustomSport(novoEsporteNome.trim(), emoji);
+    const updated = db.getCustomSports();
+    setCustomSports(updated);
+    setSport(newId);
+    setNovoEsporteNome("");
+    setNovoEsporteEmoji("");
+    setShowAddSport(false);
   }
 
   function toggleMetric(id: string) {
@@ -217,12 +344,18 @@ export default function CheckinPage() {
     if (checkInSelecionado.cancelado) {
       setErro("Erro: Não é possível registrar atividade em um check-in cancelado.");
       setCheckInSelecionado(null);
+      setEditAtividadeId(null);
       return;
     }
 
-    if (checkInSelecionado.checkoutHorario) {
+    const sessaoObj = sessoesAtivas.concat(db.get("sessoes")).find(s => s.id === checkInSelecionado.sessaoId);
+    const isSessaoAtiva = sessaoObj && new Date(sessaoObj.periodoFim) > new Date() && !sessaoObj.cancelada;
+
+    // Block only if user checked out AND is NOT editing an activity of an active session
+    if (checkInSelecionado.checkoutHorario && (editAtividadeId === null || !isSessaoAtiva)) {
       setErro("Erro: Não é possível registrar performance após realizar o check-out.");
       setCheckInSelecionado(null);
+      setEditAtividadeId(null);
       return;
     }
 
@@ -231,15 +364,17 @@ export default function CheckinPage() {
     if (isNaN(duracaoInt) || duracaoInt <= 0) {
       setErro("Erro: A duração da atividade deve ser maior que zero.");
       setCheckInSelecionado(null);
+      setEditAtividadeId(null);
       return;
     }
 
-    // Validate metrics to ensure they are positive (covers RN 11 for distance and others)
+    // Validate metrics to ensure they are positive
     for (const id of activeMetricIds) {
       const val = parseFloat(metricValues[id]);
       if (isNaN(val) || val <= 0) {
         setErro("Erro: Todas as métricas registradas devem possuir valores maiores que zero.");
         setCheckInSelecionado(null);
+        setEditAtividadeId(null);
         return;
       }
     }
@@ -257,23 +392,103 @@ export default function CheckinPage() {
       };
     });
 
-    db.add("atividades", {
+    const distanceVal = parseFloat(metricValues["distance"] || "0");
+    const formattedDate = new Date().toISOString().slice(0, 19);
+
+    const payload: RegistroAtividadeDto = {
+      atletaId: sessao.id,
       checkInId: checkInSelecionado.id,
-      sport,
-      duracao: duracaoInt,
-      intensidade,
-      xpGanho: xpCalculado,
-      metricas: {
-        custom: finalMetrics
+      esporte: sport.toUpperCase(),
+      data: formattedDate,
+      distancia: distanceVal,
+      duracaoSegundos: duracaoInt * 60,
+      intensidade: intensidade.toUpperCase(),
+      xpCalculado: xpCalculado,
+      origemRegistro: "CHECKIN",
+      metricas: JSON.stringify(finalMetrics)
+    };
+
+    try {
+      let apiRes;
+      if (editAtividadeId !== null) {
+        apiRes = await apiAtualizarAtividade(editAtividadeId, payload);
+        db.update("atividades", editAtividadeId, {
+          sport,
+          duracao: duracaoInt,
+          intensidade,
+          xpGanho: xpCalculado,
+          distancia: distanceVal,
+          data: formattedDate,
+          metricas: {
+            distancia: distanceVal,
+            custom: finalMetrics
+          }
+        } as any);
+        setSuccessMessage("Performance atualizada com sucesso no banco de dados!");
+      } else {
+        apiRes = await apiRegistrarAtividade(payload);
+        db.add("atividades", {
+          id: apiRes.id,
+          checkInId: checkInSelecionado.id,
+          atletaId: sessao.id,
+          sport,
+          duracao: duracaoInt,
+          intensidade,
+          xpGanho: xpCalculado,
+          distancia: distanceVal,
+          data: formattedDate,
+          origemRegistro: "CHECKIN",
+          metricas: {
+            distancia: distanceVal,
+            custom: finalMetrics
+          }
+        } as any);
+        db.update("checkins", checkInSelecionado.id, { temAtividade: true });
+        db.addXP(sessao.id, xpCalculado);
+        setSuccessMessage(`Performance registrada! +${xpCalculado.toFixed(1)} XP adicionados ao seu potencial.`);
       }
-    });
+    } catch (e) {
+      if (editAtividadeId !== null) {
+        db.update("atividades", editAtividadeId, {
+          sport,
+          duracao: duracaoInt,
+          intensidade,
+          xpGanho: xpCalculado,
+          distancia: distanceVal,
+          metricas: {
+            distancia: distanceVal,
+            custom: finalMetrics
+          }
+        } as any);
+        setSuccessMessage("Performance atualizada localmente!");
+      } else {
+        db.add("atividades", {
+          checkInId: checkInSelecionado.id,
+          atletaId: sessao.id,
+          sport,
+          duracao: duracaoInt,
+          intensidade,
+          xpGanho: xpCalculado,
+          distancia: distanceVal,
+          data: formattedDate,
+          origemRegistro: "CHECKIN",
+          metricas: {
+            distancia: distanceVal,
+            custom: finalMetrics
+          }
+        } as any);
+        db.update("checkins", checkInSelecionado.id, { temAtividade: true });
+        db.addXP(sessao.id, xpCalculado);
+        setSuccessMessage(`Performance registrada localmente! +${xpCalculado.toFixed(1)} XP adicionados.`);
+      }
+    }
 
-    db.update("checkins", checkInSelecionado.id, { temAtividade: true });
-    db.addXP(sessao.id, xpCalculado);
-
-    setSuccessMessage(`Performance registrada! +${xpCalculado.toFixed(1)} XP adicionados ao seu potencial.`);
     setCheckInSelecionado(null);
+    setEditAtividadeId(null);
     setMetricValues({});
+    setDuracao("60");
+    setSport("surf");
+    setIntensidade("media");
     carregar();
     setSaving(false);
   }
@@ -293,12 +508,7 @@ export default function CheckinPage() {
   });
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
-        <div className="w-16 h-16 border-[6px] border-accent/20 border-t-accent rounded-full animate-spin"></div>
-        <p className="text-ink-500 font-bold tracking-tight animate-pulse text-lg">Sincronizando seu universo esportivo...</p>
-      </div>
-    );
+    return <Loading message="Sincronizando seu universo esportivo..." className="min-h-[60vh]" />;
   }
 
   return (
@@ -306,71 +516,88 @@ export default function CheckinPage() {
       <PageHeader
         eyebrow="Treino & Evolução"
         title="Check-in de Performance"
-        subtitle="Valide sua presença nos spots e registre cada gota de suor para subir no ranking global."
+        subtitle="Valide sua presença nos spots e registre cada treino para acompanhar sua evolução."
       />
 
-      {erro && <Alert tone="danger" className="mb-8">{erro}</Alert>}
+      {erro && (
+        <Alert tone="danger" className="mb-8">
+          {erro}
+        </Alert>
+      )}
       {successMessage && (
-        <div className={`mb-10 rounded-[2.5rem] p-8 text-white shadow-2xl flex items-center gap-6 animate-in fade-in zoom-in slide-in-from-bottom-4 duration-500 ${
-          successMessage.toLowerCase().includes("cancelado") 
-            ? "bg-amber-500 shadow-amber-200" 
-            : "bg-emerald-500 shadow-emerald-200"
-        }`}>
-          <span className="text-4xl">{successMessage.toLowerCase().includes("cancelado") ? "ℹ️" : "🔥"}</span>
-          <div>
-            <p className="font-black text-xl leading-tight">
+        <div
+          className={`mb-8 flex items-center gap-5 rounded-3xl p-6 text-white shadow-soft-lg animate-in fade-in zoom-in slide-in-from-bottom-4 duration-500 ${
+            successMessage.toLowerCase().includes("cancelado") ? "bg-amber-500" : "bg-emerald-500"
+          }`}
+        >
+          <span className="text-3xl">{successMessage.toLowerCase().includes("cancelado") ? "ℹ️" : "🔥"}</span>
+          <div className="min-w-0">
+            <p className="text-lg font-black leading-tight">
               {successMessage.toLowerCase().includes("cancelado") ? "Sessão Atualizada" : "Excelente trabalho!"}
             </p>
-            <p className="text-white/90 font-medium">{successMessage}</p>
+            <p className="font-medium text-white/90">{successMessage}</p>
           </div>
         </div>
       )}
 
-      <section className="space-y-8">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-black text-ink-900 tracking-tight">Sessões Ativas Agora</h2>
-          <Badge tone="success" className="animate-pulse px-4 py-1.5">● Ao Vivo</Badge>
-        </div>
+      <section className="space-y-6">
+        <SectionHeading
+          title="Sessões Ativas Agora"
+          description="Janelas de treino acontecendo neste momento."
+          badge={{ tone: "success", label: "● Ao Vivo" }}
+        />
 
         {sessoesAtivas.length === 0 ? (
-          <Card className="flex flex-col items-center justify-center py-20 text-center border-dashed border-2 border-ink-100 bg-ink-50/30">
-            <p className="text-6xl mb-6 grayscale opacity-40">🏖️</p>
-            <p className="text-xl font-bold text-ink-900">Nenhuma sessão acontecendo no momento.</p>
-            <p className="text-ink-500 max-w-sm mt-2 font-medium">Fique de olho no calendário para as próximas janelas de captação profissional.</p>
-          </Card>
+          <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-ink-200 bg-ink-50/30 px-6 py-16 text-center">
+            <span className="mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-white text-4xl shadow-soft grayscale opacity-50">
+              🏖️
+            </span>
+            <p className="text-lg font-black text-ink-900">Nenhuma sessão acontecendo no momento.</p>
+            <p className="mt-2 max-w-sm text-[13px] font-medium text-ink-500">
+              Fique de olho no calendário para as próximas janelas de treino.
+            </p>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {sessoesAtivas.map(s => {
-              const spotObj = spots.find(sp => sp.id === s.spotId);
-              const checkInExistente = checkIns.find(c => c.sessaoId === s.id && !c.cancelado);
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {sessoesAtivas.map((s) => {
+              const spotObj = spots.find((sp) => sp.id === s.spotId) || db.getDefaultSpots().find((sp) => sp.id === s.spotId);
+              const checkInExistente = checkIns.find((c) => c.sessaoId === s.id && !c.cancelado);
               return (
-                <div key={s.id} className="group relative surface rounded-[2.5rem] overflow-hidden hover:scale-[1.02] active:scale-[0.98]">
-                  {spotObj && (
-                    <div className="h-48 relative overflow-hidden">
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent z-10" />
-                      <DynamicMap latitude={spotObj.latitude} longitude={spotObj.longitude} readOnly={true} height="100%" />
-                      <div className="absolute bottom-5 left-6 z-20">
-                        <Badge tone="accent" className="mb-2 bg-white/20 text-white backdrop-blur-md border-white/20">📍 {spotObj.nome}</Badge>
-                        <h3 className="text-2xl font-black text-white leading-tight">{s.descricao}</h3>
-                      </div>
-                    </div>
-                  )}
+                <div key={s.id} className="surface overflow-hidden rounded-3xl transition-shadow hover:shadow-soft-lg">
+                  <div className="relative h-44 overflow-hidden bg-gradient-to-br from-indigo-950 via-slate-900 to-black">
+                    {spotObj ? (
+                      <>
+                        <DynamicMap latitude={spotObj.latitude} longitude={spotObj.longitude} readOnly={true} height="100%" />
+                        <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute bottom-4 left-5 z-20">
+                          <Badge tone="accent" className="mb-2 border-white/20 bg-white/20 text-white backdrop-blur-md">
+                            📍 {spotObj.nome}
+                          </Badge>
+                          <h3 className="text-xl font-black leading-tight text-white drop-shadow-md">{s.descricao}</h3>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="absolute inset-0 z-10 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                        <div className="absolute bottom-4 left-5 z-20">
+                          <Badge tone="accent" className="mb-2 border-white/20 bg-white/20 text-white backdrop-blur-md">
+                            📍 Local Desconhecido #{s.spotId}
+                          </Badge>
+                          <h3 className="text-xl font-black leading-tight text-white drop-shadow-md">{s.descricao}</h3>
+                        </div>
+                      </>
+                    )}
+                  </div>
                   {checkInExistente ? (
                     checkInExistente.checkoutHorario ? (
-                      // Completed/Checked-out view
-                      <div className="p-8 space-y-6">
+                      // Concluído / check-out realizado
+                      <div className="space-y-5 p-6">
                         <div className="flex items-center justify-between border-b border-ink-100 pb-4">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-wider text-ink-400">
-                              Seu Check-in
-                            </p>
-                            <p className="text-[11px] font-medium text-ink-500 mt-0.5">
-                              Concluído
-                            </p>
+                            <p className="text-[10px] font-black uppercase tracking-wider text-ink-400">Seu Check-in</p>
+                            <p className="mt-0.5 text-[11px] font-medium text-ink-500">Concluído</p>
                           </div>
-                          <Badge tone="info" className="bg-blue-50 text-blue-700 border-blue-100 px-3 py-1">
-                            Check-out Realizado
-                          </Badge>
+                          <Badge tone="info">Check-out Realizado</Badge>
                         </div>
 
                         <div className="flex flex-col gap-3">
@@ -378,44 +605,41 @@ export default function CheckinPage() {
                             <>
                               <div className="flex items-center justify-between px-1">
                                 <span className="text-sm font-medium text-ink-600">Performance</span>
-                                <Badge tone="success" className="bg-emerald-50 text-emerald-700 border-emerald-100 px-3 py-1">
-                                  {atividades.filter(a => a.checkInId === checkInExistente.id).length} Treino(s)
+                                <Badge tone="success">
+                                  {atividades.filter((a) => a.checkInId === checkInExistente.id).length} Treino(s)
                                 </Badge>
                               </div>
-                              <Button
-                                variant="primary"
-                                size="md"
-                                className="w-full bg-ink-900 text-white"
-                                onClick={() => setVerCheckInId(checkInExistente.id)}
-                              >
+                              <Button variant="primary" size="md" className="w-full" onClick={() => setVerCheckInId(checkInExistente.id)}>
                                 Ver Resumo XP
                               </Button>
                             </>
                           ) : (
-                            <div className="text-center py-4 bg-ink-50 rounded-2xl border border-ink-100">
-                              <p className="text-sm text-ink-500 font-medium">Sem Registro de Performance</p>
+                            <div className="rounded-2xl border border-ink-100 bg-ink-50 py-4 text-center">
+                              <p className="text-sm font-medium text-ink-500">Sem Registro de Performance</p>
                             </div>
                           )}
                         </div>
                       </div>
                     ) : (
-                      // Active view
-                      <div className="p-8 space-y-6">
+                      // Ativo
+                      <div className="space-y-5 p-6">
                         <div className="flex items-center justify-between border-b border-ink-100 pb-4">
                           <div>
-                            <p className="text-[10px] font-black uppercase tracking-wider text-ink-400">
-                              Seu Check-in
-                            </p>
-                            <p className="text-[11px] font-medium text-ink-500 mt-0.5">
-                              Ativo · {new Date(checkInExistente.horario).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}
+                            <p className="text-[10px] font-black uppercase tracking-wider text-ink-400">Seu Check-in</p>
+                            <p className="mt-0.5 text-[11px] font-medium text-ink-500">
+                              Ativo ·{" "}
+                              {new Date(checkInExistente.horario).toLocaleTimeString("pt-BR", {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
                             </p>
                           </div>
                           {checkInExistente.temAtividade ? (
-                            <Badge tone="success" className="bg-emerald-50 text-emerald-700 border-emerald-100 px-3 py-1">
-                              {atividades.filter(a => a.checkInId === checkInExistente.id).length} Treino(s)
+                            <Badge tone="success">
+                              {atividades.filter((a) => a.checkInId === checkInExistente.id).length} Treino(s)
                             </Badge>
                           ) : (
-                            <Badge tone="warning" className="bg-amber-50 text-amber-700 border-amber-100 px-3 py-1 animate-pulse">
+                            <Badge tone="warning" className="animate-pulse">
                               Pendente
                             </Badge>
                           )}
@@ -430,34 +654,29 @@ export default function CheckinPage() {
                           >
                             {checkInExistente.temAtividade ? "➕ Adicionar Treino" : "Registrar Performance"}
                           </Button>
-                          
+
                           {checkInExistente.temAtividade && (
-                            <Button
-                              variant="primary"
-                              size="md"
-                              className="w-full bg-ink-900 text-white"
-                              onClick={() => setVerCheckInId(checkInExistente.id)}
-                            >
+                            <Button variant="primary" size="md" className="w-full" onClick={() => setVerCheckInId(checkInExistente.id)}>
                               Ver Resumo XP
                             </Button>
                           )}
 
-                          <div className="flex gap-2 pt-2 border-t border-ink-50 mt-1">
+                          <div className="mt-1 flex gap-2 border-t border-ink-50 pt-3">
                             <Button
-                              variant="danger"
+                              variant="secondary"
                               size="sm"
-                              className="flex-1 bg-rose-50 text-rose-600 hover:bg-rose-100 shadow-none border border-rose-100"
+                              className="flex-1 text-rose-600 hover:bg-rose-50"
                               onClick={() => fazerCheckout(checkInExistente.id)}
                               disabled={saving}
                             >
-                              Fazer Checkout
+                              Fazer checkout
                             </Button>
 
                             {!checkInExistente.temAtividade && (
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                className="flex-none text-ink-400 hover:text-rose-600 hover:bg-rose-50 px-3"
+                                className="px-3 text-ink-400 hover:bg-rose-50 hover:text-rose-600"
                                 onClick={() => cancelarCheckIn(checkInExistente.id)}
                                 disabled={saving}
                               >
@@ -469,17 +688,11 @@ export default function CheckinPage() {
                       </div>
                     )
                   ) : (
-                    <div className="p-8">
-                      <p className="text-[13px] font-medium text-ink-500 mb-6 leading-relaxed line-clamp-2">
-                        Sincronize sua performance neste spot para que os fotógrafos identifiquem suas melhores manobras.
+                    <div className="p-6">
+                      <p className="mb-5 text-[13px] font-medium leading-relaxed text-ink-500 line-clamp-2">
+                        Faça seu check-in neste spot para registrar suas atividades e acompanhar sua evolução.
                       </p>
-                      <Button
-                        variant="accent"
-                        size="lg"
-                        className="w-full"
-                        disabled={saving}
-                        onClick={() => fazerCheckIn(s)}
-                      >
+                      <Button variant="accent" size="lg" className="w-full" disabled={saving} onClick={() => fazerCheckIn(s)} loading={saving}>
                         {saving ? "Validando..." : "Fazer Check-in"}
                       </Button>
                     </div>
@@ -491,229 +704,268 @@ export default function CheckinPage() {
         )}
       </section>
 
-      <section className="pt-10 space-y-8">
-        <h2 className="text-3xl font-black text-ink-900 tracking-tight">Meu Histórico de Treinos</h2>
-        
-        <Card title={`Meu Histórico de Treinos`} description={`${historicoCheckIns.length} sessões registradas em seu diário.`}>
-          <div className="space-y-6 mt-6">
-            {historicoCheckIns.length === 0 ? (
-              <div className="py-24 text-center bg-ink-50/50 rounded-[2.5rem] border border-dashed border-ink-200">
-                <p className="text-7xl mb-6 opacity-20">🏃‍♂️</p>
-                <p className="text-xl font-bold text-ink-500">Sua jornada começa com o primeiro check-in.</p>
-              </div>
-            ) : (
-              historicoCheckIns.map((c) => {
-                const checkInDate = new Date(c.horario).toLocaleString("pt-BR", { dateStyle: 'medium', timeStyle: 'short' });
-                const s = db.get("sessoes").find(sess => sess.id === c.sessaoId);
-                const checkInAtivs = atividades.filter(a => a.checkInId === c.id);
-                const isSessionActive = s && new Date(s.periodoFim) > new Date();
-                
-                return (
-                  <div key={c.id} className="surface p-6 sm:p-8 rounded-[2.5rem] flex flex-col md:flex-row md:items-center justify-between gap-6 hover:shadow-xl transition-all border border-ink-100/50 group">
-                    <div className="flex items-start gap-6">
-                      <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center text-3xl shadow-inner shrink-0 ${c.temAtividade ? 'bg-emerald-100 text-emerald-600' : (isSessionActive && !c.checkoutHorario ? 'bg-amber-100 text-amber-600' : 'bg-ink-100 text-ink-400')}`}>
-                        {c.temAtividade ? "✅" : (isSessionActive && !c.checkoutHorario ? "⏳" : "✖️")}
-                      </div>
-                      <div className="pt-1">
-                        <div className="flex items-center gap-3 mb-1.5">
-                          <h4 className="text-2xl font-black text-ink-900 tracking-tight">{s?.descricao || "Sessão"}</h4>
-                        </div>
-                        <p className="text-[12px] font-bold text-ink-400 uppercase tracking-widest mb-4">{checkInDate} <span className="mx-2 text-ink-200">|</span> ID #{c.id}</p>
-                        
-                        <div className="flex flex-wrap gap-2">
-                          {c.cancelado ? (
-                            <Badge tone="danger">Cancelado</Badge>
-                          ) : (
-                            <>
-                              {c.temAtividade ? (
-                                <Badge tone="success" className="bg-emerald-50 text-emerald-700">{checkInAtivs.length} Treinos Registrados</Badge>
-                              ) : (
-                                <>
-                                  {c.checkoutHorario ? (
-                                    <Badge tone="neutral" className="bg-ink-100 text-ink-600 border-ink-200">Sem Registro de Performance</Badge>
-                                  ) : (
-                                    <Badge tone={isSessionActive ? "warning" : "neutral"} className={isSessionActive ? "bg-amber-50 text-amber-700" : ""}>
-                                      {isSessionActive ? "Performance Pendente" : "Sessão Encerrada s/ Treino"}
-                                    </Badge>
-                                  )}
-                                </>
-                              )}
-                              {c.checkoutHorario && <Badge tone="info" className="bg-blue-50 text-blue-700">Check-out Realizado</Badge>}
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </div>
+      <section className="space-y-6 pt-8">
+        <SectionHeading
+          title="Meu Histórico de Treinos"
+          description={`${historicoCheckIns.length} sessões registradas em seu diário.`}
+        />
 
-                    <div className="flex flex-col sm:flex-row items-center gap-3 w-full md:w-auto mt-4 md:mt-0 pt-4 md:pt-0 border-t md:border-none border-ink-100">
-                      {!c.cancelado && !c.checkoutHorario && isSessionActive && (
-                        <Button
-                          variant="danger"
-                          size="md"
-                          className="w-full sm:w-auto bg-rose-50 text-rose-600 hover:bg-rose-100 shadow-none border border-rose-100"
-                          onClick={() => fazerCheckout(c.id)}
-                          disabled={saving}
-                        >
-                          Fazer Checkout
-                        </Button>
-                      )}
-                      {!c.cancelado && !c.checkoutHorario && !c.temAtividade && isSessionActive && (
-                        <Button
-                          variant="accent"
-                          size="md"
-                          className="w-full sm:w-auto"
-                          onClick={() => setCheckInSelecionado(c)}
-                        >
-                          Registrar Performance
-                        </Button>
-                      )}
-                      {!c.cancelado && !c.checkoutHorario && !c.temAtividade && (
-                        <Button
-                          variant="ghost"
-                          size="md"
-                          className="w-full sm:w-auto text-ink-400 hover:text-rose-600 hover:bg-rose-50"
-                          onClick={() => cancelarCheckIn(c.id)}
-                          disabled={saving}
-                        >
-                          Cancelar Check-in
-                        </Button>
-                      )}
-                      {c.temAtividade && (
-                        <Button
-                          variant="primary"
-                          size="md"
-                          className="w-full sm:w-auto bg-ink-900 text-white"
-                          onClick={() => setVerCheckInId(c.id)}
-                        >
-                          Ver Resumo XP
-                        </Button>
-                      )}
+        {historicoCheckIns.length === 0 ? (
+          <div className="flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-ink-200 bg-ink-50/40 px-6 py-16 text-center">
+            <span className="mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-white text-4xl shadow-soft opacity-40">
+              🏃‍♂️
+            </span>
+            <p className="text-lg font-black text-ink-900">Sua jornada começa com o primeiro check-in.</p>
+            <p className="mt-2 max-w-sm text-[13px] font-medium text-ink-500">
+              Quando você registrar treinos, eles aparecerão aqui como histórico.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {historicoCheckIns.map((c) => {
+              const checkInDate = new Date(c.horario).toLocaleString("pt-BR", { dateStyle: "medium", timeStyle: "short" });
+              const s = db.get("sessoes").find((sess) => sess.id === c.sessaoId);
+              const checkInAtivs = atividades.filter((a) => a.checkInId === c.id);
+              const isSessionActive = s && new Date(s.periodoFim) > new Date();
+
+              return (
+                <div
+                  key={c.id}
+                  className="surface flex flex-col justify-between gap-5 rounded-3xl border border-ink-100/50 p-5 transition-shadow hover:shadow-soft-lg sm:p-6 md:flex-row md:items-center"
+                >
+                  <div className="flex items-start gap-4">
+                    <div
+                      className={`grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-2xl ${
+                        c.temAtividade
+                          ? "bg-emerald-100 text-emerald-600"
+                          : isSessionActive && !c.checkoutHorario
+                            ? "bg-amber-100 text-amber-600"
+                            : "bg-ink-100 text-ink-400"
+                      }`}
+                    >
+                      {c.temAtividade ? "✅" : isSessionActive && !c.checkoutHorario ? "⏳" : "✖️"}
+                    </div>
+                    <div className="pt-0.5">
+                      <h4 className="text-xl font-black tracking-tight text-ink-900">{s?.descricao || "Sessão"}</h4>
+                      <p className="mb-3 mt-1 text-[11px] font-bold uppercase tracking-widest text-ink-400">
+                        {checkInDate} <span className="mx-2 text-ink-200">|</span> ID #{c.id}
+                      </p>
+
+                      <div className="flex flex-wrap gap-2">
+                        {c.cancelado ? (
+                          <Badge tone="danger">Cancelado</Badge>
+                        ) : (
+                          <>
+                            {c.temAtividade ? (
+                              <Badge tone="success">{checkInAtivs.length} Treinos Registrados</Badge>
+                            ) : c.checkoutHorario ? (
+                              <Badge tone="neutral">Sem Registro de Performance</Badge>
+                            ) : (
+                              <Badge tone={isSessionActive ? "warning" : "neutral"}>
+                                {isSessionActive ? "Performance Pendente" : "Sessão Encerrada s/ Treino"}
+                              </Badge>
+                            )}
+                            {c.checkoutHorario && <Badge tone="info">Check-out Realizado</Badge>}
+                          </>
+                        )}
+                      </div>
                     </div>
                   </div>
-                );
-              })
-            )}
+
+                  <div className="mt-4 flex w-full flex-col gap-2 border-t border-ink-100 pt-4 md:mt-0 md:w-auto md:flex-row md:items-center md:border-none md:pt-0">
+                    {!c.cancelado && !c.checkoutHorario && isSessionActive && (
+                      <Button
+                        variant="secondary"
+                        size="md"
+                        className="w-full text-rose-600 hover:bg-rose-50 md:w-auto"
+                        onClick={() => fazerCheckout(c.id)}
+                        disabled={saving}
+                      >
+                        Fazer Checkout
+                      </Button>
+                    )}
+                    {!c.cancelado && !c.checkoutHorario && !c.temAtividade && isSessionActive && (
+                      <Button variant="accent" size="md" className="w-full md:w-auto" onClick={() => setCheckInSelecionado(c)}>
+                        Registrar Performance
+                      </Button>
+                    )}
+                    {!c.cancelado && !c.checkoutHorario && !c.temAtividade && (
+                      <Button
+                        variant="ghost"
+                        size="md"
+                        className="w-full text-ink-400 hover:bg-rose-50 hover:text-rose-600 md:w-auto"
+                        onClick={() => cancelarCheckIn(c.id)}
+                        disabled={saving}
+                      >
+                        Cancelar Check-in
+                      </Button>
+                    )}
+                    {c.temAtividade && (
+                      <Button variant="primary" size="md" className="w-full md:w-auto" onClick={() => setVerCheckInId(c.id)}>
+                        Ver Resumo XP
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </Card>
+        )}
       </section>
 
       <Modal
         isOpen={!!checkInSelecionado}
-        onClose={() => setCheckInSelecionado(null)}
-        title="Registrar Performance"
+        onClose={() => {
+          setCheckInSelecionado(null);
+          setEditAtividadeId(null);
+          setMetricValues({});
+          setDuracao("60");
+          setSport("surf");
+          setIntensidade("media");
+        }}
+        title={editAtividadeId ? "Editar Performance" : "Registrar Performance"}
       >
-        <form onSubmit={registrarAtividade} className="space-y-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Select
-              label="Esporte"
-              value={sport}
-              onChange={(e) => setSport(e.target.value as SportType)}
-              required
-            >
-              <option value="surf">Surfe 🏄‍♂️</option>
-              <option value="skate">Skate 🛹</option>
-              <option value="futebol">Futebol ⚽</option>
-              <option value="corrida">Corrida 🏃‍♂️</option>
-              <option value="custom">Outro Esporte ✨</option>
-            </Select>
+        <form onSubmit={registrarAtividade} className="space-y-6">
+          <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div className="flex flex-col gap-2">
+              <span className="mb-0.5 block text-[13px] font-medium text-ink-700">Esporte</span>
+              <div className="flex gap-2">
+                <select
+                  value={sport}
+                  onChange={(e) => setSport(e.target.value as SportType)}
+                  required
+                  className="h-11 flex-1 rounded-xl border border-ink-200 bg-white px-4 text-[15px] text-ink-900 transition-colors focus:border-accent focus:outline-none focus:ring-4 focus:ring-accent/20"
+                >
+                  <option value="corrida">🏃 Corrida</option>
+                  <option value="surf">🏄 Surfe</option>
+                  <option value="skate">🛹 Skate</option>
+                  <option value="futebol">⚽ Futebol</option>
+                  <option value="bicicleta">🚴 Bicicleta</option>
+                  <option value="caminhada">🥾 Caminhada</option>
+                  <option value="natacao">🏊 Natação</option>
+                  {customSports.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => setShowAddSport(!showAddSport)}
+                  title="Adicionar novo esporte"
+                  className="shrink-0 rounded-xl border border-accent/40 bg-accent/10 px-3 text-[12px] font-black text-accent outline-none transition-colors hover:bg-accent/20 focus-visible:ring-4 focus-visible:ring-accent/30"
+                >
+                  {showAddSport ? "✕" : "+ Esporte"}
+                </button>
+              </div>
+              {showAddSport && (
+                <div className="flex flex-col gap-3 rounded-2xl border border-accent/20 bg-white p-4 shadow-soft-lg animate-in zoom-in duration-200">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-ink-400">Novo Esporte</p>
+                  <div className="grid grid-cols-[80px_1fr] gap-3">
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold text-ink-400">Emoji</label>
+                      <input
+                        type="text"
+                        placeholder="🏅"
+                        value={novoEsporteEmoji}
+                        onChange={(e) => setNovoEsporteEmoji(e.target.value)}
+                        maxLength={2}
+                        className="w-full rounded-xl border border-ink-200 bg-ink-50 px-3 py-2 text-center text-xl focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-[10px] font-bold text-ink-400">Nome do Esporte</label>
+                      <input
+                        type="text"
+                        placeholder="Ex: Basquete"
+                        value={novoEsporteNome}
+                        onChange={(e) => setNovoEsporteNome(e.target.value)}
+                        onKeyDown={(e) => e.key === "Enter" && adicionarNovoEsporte()}
+                        className="w-full rounded-xl border border-ink-200 bg-ink-50 px-3 py-2 text-[13px] font-bold text-ink-700 focus:outline-none focus:ring-2 focus:ring-accent/30"
+                      />
+                    </div>
+                  </div>
+                  <Button type="button" size="sm" variant="accent" className="w-full" onClick={adicionarNovoEsporte} disabled={!novoEsporteNome.trim()}>
+                    Salvar Esporte
+                  </Button>
+                </div>
+              )}
+            </div>
 
-            <Select
-              label="Intensidade do Treino"
-              value={intensidade}
-              onChange={(e) => setIntensidade(e.target.value as any)}
-              required
-            >
+            <Select label="Intensidade do Treino" value={intensidade} onChange={(e) => setIntensidade(e.target.value as any)} required>
               <option value="baixa">Baixa (Recuperação)</option>
               <option value="media">Média (Ritmo)</option>
               <option value="alta">Alta (Intervalado)</option>
             </Select>
           </div>
 
-          <div className="p-8 bg-ink-50 rounded-[2rem] border border-ink-100 space-y-8 shadow-inner">
-            <div className="grid grid-cols-1 gap-6">
-              <Input
-                label="Duração (minutos)"
-                type="number"
-                value={duracao}
-                onChange={(e) => setDuracao(e.target.value)}
-                required
-              />
-            </div>
+          <div className="space-y-6 rounded-3xl border border-ink-100 bg-ink-50/50 p-6">
+            <Input label="Duração (minutos)" type="number" value={duracao} onChange={(e) => setDuracao(e.target.value)} required />
 
-            <div className="pt-6 border-t border-ink-200">
-              <div className="flex items-center justify-between mb-6">
-                <h4 className="font-black text-lg text-ink-900">O que você quer registrar?</h4>
-                <div className="flex gap-2">
-                   <button 
-                    type="button"
-                    onClick={() => setShowAddCustom(!showAddCustom)}
-                    className="text-[12px] font-black text-accent hover:underline uppercase tracking-widest"
-                  >
-                    {showAddCustom ? "Cancelar" : "+ Criar Nova"}
-                  </button>
-                </div>
+            <div className="border-t border-ink-200 pt-6">
+              <div className="mb-5 flex items-center justify-between">
+                <h4 className="text-lg font-black text-ink-900">O que você quer registrar?</h4>
+                <button
+                  type="button"
+                  onClick={() => setShowAddCustom(!showAddCustom)}
+                  className="text-[12px] font-black uppercase tracking-widest text-accent hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/30"
+                >
+                  {showAddCustom ? "Cancelar" : "+ Criar Nova"}
+                </button>
               </div>
 
-              {/* Metric Selector Box */}
-              <div className="flex flex-wrap gap-2 mb-8 p-4 bg-white/50 rounded-2xl border border-ink-200">
-                {allAvailableMetrics.map(m => {
-                   const isActive = activeMetricIds.includes(m.id);
-                   return (
-                     <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => toggleMetric(m.id)}
-                        className={`px-4 py-2 rounded-xl text-[11px] font-bold transition-all border ${
-                          isActive 
-                          ? "bg-accent text-white border-accent shadow-md scale-105" 
-                          : "bg-white text-ink-500 border-ink-200 hover:border-ink-400"
-                        }`}
-                     >
-                       {m.label} {isActive && "✓"}
-                     </button>
-                   );
+              {/* Seletor de métricas */}
+              <div className="mb-6 flex flex-wrap gap-2 rounded-2xl border border-ink-200 bg-white/60 p-4">
+                {allAvailableMetrics.map((m) => {
+                  const isActive = activeMetricIds.includes(m.id);
+                  return (
+                    <button
+                      key={m.id}
+                      type="button"
+                      onClick={() => toggleMetric(m.id)}
+                      className={`rounded-xl border px-4 py-2 text-[11px] font-bold transition-all ${
+                        isActive
+                          ? "scale-105 border-accent bg-accent text-white shadow-md"
+                          : "border-ink-200 bg-white text-ink-500 hover:border-ink-400"
+                      }`}
+                    >
+                      {m.label} {isActive && "✓"}
+                    </button>
+                  );
                 })}
               </div>
 
               {showAddCustom && (
-                <div className="flex flex-col gap-3 p-6 bg-white rounded-3xl border border-accent/20 shadow-lg mb-8 animate-in zoom-in duration-300">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-ink-400 mb-2">Nova métrica personalizada</p>
+                <div className="mb-6 flex flex-col gap-3 rounded-3xl border border-accent/20 bg-white p-6 shadow-soft-lg animate-in zoom-in duration-300">
+                  <p className="mb-2 text-[10px] font-black uppercase tracking-widest text-ink-400">Nova métrica personalizada</p>
                   <div className="grid grid-cols-2 gap-4">
-                    <Input
-                      label="Nome (ex: Defesas)"
-                      placeholder="Ex: Defesas"
-                      value={novaMetricaLabel}
-                      onChange={(e) => setNovaMetricaLabel(e.target.value)}
-                    />
-                    <Input
-                      label="Unidade (ex: und)"
-                      placeholder="Ex: unidades"
-                      value={novaMetricaUnit}
-                      onChange={(e) => setNovaMetricaUnit(e.target.value)}
-                    />
+                    <Input label="Nome (ex: Defesas)" placeholder="Ex: Defesas" value={novaMetricaLabel} onChange={(e) => setNovaMetricaLabel(e.target.value)} />
+                    <Input label="Unidade (ex: und)" placeholder="Ex: unidades" value={novaMetricaUnit} onChange={(e) => setNovaMetricaUnit(e.target.value)} />
                   </div>
-                  <Button type="button" size="md" variant="accent" className="w-full mt-2" onClick={adicionarNovaDefinicaoMetrica}>Salvar no meu Perfil</Button>
+                  <Button type="button" size="md" variant="accent" className="mt-2 w-full" onClick={adicionarNovaDefinicaoMetrica}>
+                    Salvar no meu Perfil
+                  </Button>
                 </div>
               )}
 
-              {/* Dynamic Inputs for Active Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {activeMetricIds.map(mid => {
-                  const m = allAvailableMetrics.find(metric => metric.id === mid);
+              {/* Inputs dinâmicos das métricas ativas */}
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+                {activeMetricIds.map((mid) => {
+                  const m = allAvailableMetrics.find((metric) => metric.id === mid);
                   if (!m) return null;
                   return (
-                    <div key={mid} className="relative group">
-                       <Input
+                    <div key={mid} className="group relative">
+                      <Input
                         label={`${m.label} (${m.unit})`}
                         type="number"
                         placeholder="0"
                         value={metricValues[mid] || ""}
-                        onChange={(e) => setMetricValues(prev => ({ ...prev, [mid]: e.target.value }))}
+                        onChange={(e) => setMetricValues((prev) => ({ ...prev, [mid]: e.target.value }))}
                       />
-                      <button 
+                      <button
                         type="button"
                         onClick={() => toggleMetric(mid)}
-                        className="absolute -top-1 -right-1 w-5 h-5 bg-rose-500 text-white rounded-full text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-sm"
+                        className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-rose-500 text-[10px] text-white opacity-0 shadow-sm transition-opacity group-hover:opacity-100 focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-300"
                       >
                         ✕
                       </button>
@@ -723,36 +975,47 @@ export default function CheckinPage() {
               </div>
 
               {activeMetricIds.length === 0 && !showAddCustom && (
-                <div className="py-10 text-center bg-white/30 rounded-3xl border border-dashed border-ink-200">
-                   <p className="text-sm text-ink-400 font-medium italic">Selecione métricas acima para começar o registro.</p>
+                <div className="rounded-3xl border border-dashed border-ink-200 bg-white/40 py-10 text-center">
+                  <p className="text-sm font-medium italic text-ink-400">Selecione métricas acima para começar o registro.</p>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="rounded-[2.5rem] bg-ink-900 p-8 text-white relative overflow-hidden shadow-2xl">
-            <div className="absolute right-0 top-0 bottom-0 w-32 bg-gradient-to-l from-accent/20 to-transparent pointer-events-none" />
-            <div className="relative flex justify-between items-center">
+          <div className="relative overflow-hidden rounded-3xl bg-ink-900 p-6 text-white shadow-soft-lg">
+            <div className="pointer-events-none absolute bottom-0 right-0 top-0 w-32 bg-gradient-to-l from-accent/20 to-transparent" />
+            <div className="relative flex items-center justify-between">
               <div>
-                <p className="text-[12px] font-black uppercase tracking-[0.2em] text-accent mb-1">Ganhos Estimados</p>
-                <p className="text-5xl font-black">{xpCalculado.toFixed(1)} <span className="text-lg text-ink-400">XP</span></p>
+                <p className="mb-1 text-[12px] font-black uppercase tracking-[0.2em] text-accent">Ganhos Estimados</p>
+                <p className="text-5xl font-black">
+                  {xpCalculado.toFixed(1)} <span className="text-lg text-ink-400">XP</span>
+                </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] font-bold text-ink-400 mb-2 uppercase tracking-widest">Sincronização Sugerida</p>
-                <Badge tone="accent" className="bg-white/10 text-white border-white/10">Revelar com Fotos</Badge>
+                <p className="mb-2 text-[10px] font-bold uppercase tracking-widest text-ink-400">Sincronização Sugerida</p>
+                <Badge tone="accent" className="border-white/10 bg-white/10 text-white">
+                  Revelar com Fotos
+                </Badge>
               </div>
             </div>
           </div>
 
-          <div className="flex gap-4 pt-4">
-            <Button type="submit" variant="accent" className="flex-1" size="lg" disabled={saving || activeMetricIds.length === 0}>
+          <div className="flex flex-col gap-3 pt-2 sm:flex-row-reverse">
+            <Button type="submit" variant="accent" className="flex-1" size="lg" disabled={saving || activeMetricIds.length === 0} loading={saving}>
               {saving ? "Salvando Treino..." : "Salvar Performance"}
             </Button>
             <Button
               type="button"
               variant="secondary"
               size="lg"
-              onClick={() => setCheckInSelecionado(null)}
+              onClick={() => {
+                setCheckInSelecionado(null);
+                setEditAtividadeId(null);
+                setMetricValues({});
+                setDuracao("60");
+                setSport("surf");
+                setIntensidade("media");
+              }}
             >
               Cancelar
             </Button>
@@ -818,8 +1081,14 @@ export default function CheckinPage() {
                     )}
                     {a.metricas?.gols !== undefined && (
                       <div className="space-y-1">
-                        <p className="text-[10px] font-black uppercase tracking-widest text-ink-500">Gols/Assist</p>
+                        <p className="text-[10px] font-black uppercase tracking-widest text-ink-500">Gols</p>
                         <p className="text-lg font-bold text-white">{a.metricas.gols}</p>
+                      </div>
+                    )}
+                    {a.metricas?.assistencias !== undefined && (
+                      <div className="space-y-1">
+                        <p className="text-[10px] font-black uppercase tracking-widest text-ink-500">Assistências</p>
+                        <p className="text-lg font-bold text-white">{a.metricas.assistencias}</p>
                       </div>
                     )}
                     {a.metricas?.velocidadeMax !== undefined && (
@@ -836,6 +1105,47 @@ export default function CheckinPage() {
                       </div>
                     ))}
                   </div>
+
+                  {sessaoDoVer && new Date(sessaoDoVer.periodoFim) > new Date() && !sessaoDoVer.cancelada && !verCheckInObj?.cancelado && (
+                    <div className="mt-6 pt-4 border-t border-white/10 flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setVerCheckInId(null);
+                          setCheckInSelecionado(verCheckInObj || null);
+                          setEditAtividadeId(a.id);
+                          setSport(a.sport);
+                          setDuracao(a.duracao.toString());
+                          setIntensidade(a.intensidade || "media");
+                          
+                          const values: Record<string, string> = {};
+                          const ids: string[] = [];
+                          
+                          a.metricas?.custom?.forEach((m: any) => {
+                            const match = allAvailableMetrics.find(metric => metric.label === m.label);
+                            if (match) {
+                              values[match.id] = m.value.toString();
+                              ids.push(match.id);
+                            }
+                          });
+                          
+                          if (a.metricas?.distancia !== undefined) {
+                            const match = allAvailableMetrics.find(metric => metric.id === "distance");
+                            if (match) {
+                              values[match.id] = a.metricas.distancia.toString();
+                              if (!ids.includes(match.id)) ids.push(match.id);
+                            }
+                          }
+
+                          setMetricValues(values);
+                          setActiveMetricIds(ids);
+                        }}
+                        className="rounded-xl bg-accent px-4 py-2 text-[11px] font-black uppercase tracking-wider text-white shadow-md transition-all hover:scale-105 active:scale-95"
+                      >
+                        Editar Performance
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

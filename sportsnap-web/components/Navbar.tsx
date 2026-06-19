@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 
 const linksAtleta = [
   { href: "/atletas", label: "Dashboard" },
+  { href: "/atividades/analise", label: "Evolução Real" },
   { href: "/loja", label: "Loja" },
   { href: "/clube", label: "Pass ⭐️" },
   { href: "/favoritos", label: "Favoritos" },

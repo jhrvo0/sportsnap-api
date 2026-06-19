@@ -32,6 +32,7 @@ public class DashboardFotografoSteps {
     @Autowired private FotoServico fotoServico;
     @Autowired private VendaServico vendaServico;
     @Autowired private DashboardServico dashboardServico;
+    @Autowired private com.sportsnap.marketplace.dominio.licenca.LicencaRepositorio licencaRepositorio;
 
     private final Map<String, Fotografo> fotografosPorNome = new HashMap<>();
     private Fotografo fotografoAtual;
@@ -64,7 +65,16 @@ public class DashboardFotografoSteps {
         }
         var fotos = fotoServico.uploadEmLote(lote.getId(), caminhos);
         for (int i = 0; i < vendidas; i++) {
-            licencaAtual = vendaServico.processarVenda(new AtletaId(100 + i), fotos.get(i).getId());
+            var lic = vendaServico.processarVenda(new AtletaId(100 + i), fotos.get(i).getId());
+            if (nome.equalsIgnoreCase("Pedro")) {
+                var backdated = new com.sportsnap.marketplace.dominio.licenca.LicencaDeImagem(
+                    lic.getId(), lic.getAtletaId(), lic.getFotoId(), lic.getPreco(),
+                    java.time.LocalDateTime.now().minusDays(8), lic.isCancelada(), lic.isAdquiridaViaCota()
+                );
+                licencaRepositorio.salvar(backdated);
+                lic = backdated;
+            }
+            licencaAtual = lic;
         }
     }
 

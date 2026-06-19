@@ -1,5 +1,6 @@
 package com.sportsnap.session.infraestrutura.persistencia.jpa;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,6 +19,7 @@ import com.sportsnap.session.dominio.atividade.Intensidade;
 import com.sportsnap.session.dominio.atividade.RegistroAtividade;
 import com.sportsnap.session.dominio.atividade.RegistroAtividadeId;
 import com.sportsnap.session.dominio.atividade.RegistroAtividadeRepositorio;
+import com.sportsnap.session.dominio.atleta.AtletaId;
 import com.sportsnap.session.dominio.checkin.CheckInId;
 
 @Entity
@@ -26,15 +28,27 @@ class RegistroAtividadeJpa {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     Integer id;
-    int checkInId;
+    int atletaId;
+    Integer checkInId;
     double distancia;
     long duracaoSegundos;
     String intensidade;
-    double xpCalculado;
+    Double xpCalculado;
+    String esporte;
+    LocalDateTime data;
+    Integer esforcoPercebido;
+    String observacoes;
+    String origemRegistro;
+    String metricas;
+    LocalDateTime criadoEm;
+    LocalDateTime atualizadoEm;
 }
 
 interface RegistroAtividadeJpaRepository extends JpaRepository<RegistroAtividadeJpa, Integer> {
-    List<RegistroAtividadeJpa> findByCheckInId(int checkInId);
+    List<RegistroAtividadeJpa> findByCheckInId(Integer checkInId);
+    List<RegistroAtividadeJpa> findByAtletaId(int atletaId);
+    List<RegistroAtividadeJpa> findByAtletaIdAndEsporteIgnoreCase(int atletaId, String esporte);
+    List<RegistroAtividadeJpa> findByAtletaIdAndEsporteIgnoreCaseAndDataBetween(int atletaId, String esporte, LocalDateTime inicio, LocalDateTime fim);
 }
 
 @Repository
@@ -60,6 +74,26 @@ class RegistroAtividadeRepositorioImpl implements RegistroAtividadeRepositorio {
     @Override
     public List<RegistroAtividade> listarPorCheckIn(CheckInId checkInId) {
         return repositorio.findByCheckInId(checkInId.getId()).stream().map(mapeador::paraDominio).toList();
+    }
+
+    @Override
+    public List<RegistroAtividade> buscarPorAtleta(AtletaId atletaId) {
+        return repositorio.findByAtletaId(atletaId.getId()).stream().map(mapeador::paraDominio).toList();
+    }
+
+    @Override
+    public List<RegistroAtividade> buscarPorAtletaEEsporte(AtletaId atletaId, String esporte) {
+        return repositorio.findByAtletaIdAndEsporteIgnoreCase(atletaId.getId(), esporte).stream().map(mapeador::paraDominio).toList();
+    }
+
+    @Override
+    public List<RegistroAtividade> buscarPorAtletaEsporteEPeriodo(AtletaId atletaId, String esporte, LocalDateTime inicio, LocalDateTime fim) {
+        return repositorio.findByAtletaIdAndEsporteIgnoreCaseAndDataBetween(atletaId.getId(), esporte, inicio, fim).stream().map(mapeador::paraDominio).toList();
+    }
+
+    @Override
+    public void remover(RegistroAtividadeId id) {
+        repositorio.deleteById(id.getId());
     }
 
     @Transactional

@@ -13,6 +13,7 @@ import com.sportsnap.session.dominio.sessao.SessaoRepositorio;
 import com.sportsnap.session.dominio.sessao.SessaoServico;
 import com.sportsnap.session.dominio.spot.SpotRepositorio;
 import com.sportsnap.session.dominio.spot.SpotServico;
+import com.sportsnap.session.dominio.atividade.AnaliseAtividadeServico;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
@@ -62,5 +63,10 @@ public class SessionServiceApplication {
                                               CheckInRepositorio checkInRepositorio,
                                               EventoBarramento barramento) {
         return new AtividadeServico(repositorio, checkInRepositorio, barramento);
+    }
+
+    @Bean
+    public AnaliseAtividadeServico analiseAtividadeServico(RegistroAtividadeRepositorio repositorio) {
+        return new AnaliseAtividadeServico(repositorio);
     }
 }

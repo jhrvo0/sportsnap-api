@@ -5,4 +5,5 @@ public interface SpotResumo {
     String getNome();
     double getLatitude();
     double getLongitude();
+    String getDescricao();
 }

@@ -48,14 +48,62 @@ h1, h2, h3, h4 {
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
 
-  .surface:hover {
-    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
-  }
-
   .surface-elev {
     background: white;
     border: 1px solid rgba(0, 0, 0, 0.04);
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
+  }
+
+  /* Sombras utilitárias esportivas (sutis, sem exagero) */
+  .shadow-soft {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .shadow-soft-lg {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+  }
+
+  /* Foco visível padronizado para qualquer elemento clicável */
+  .focus-ring {
+    outline: none;
+  }
+  .focus-ring:focus-visible {
+    box-shadow: 0 0 0 4px rgb(var(--accent) / 0.25);
+  }
+}
+
+@layer utilities {
+  /* Grid responsivo padrão para cards (Spots, Sessões, etc.) */
+  .card-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.25rem;
+  }
+
+  /* Skeleton shimmer para loadings */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background: rgba(0, 0, 0, 0.05);
+  }
+  .skeleton::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.6),
+      transparent
+    );
+    animation: shimmer 1.4s infinite;
+  }
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
   }
 }
 
@@ -111,9 +159,3 @@ h1, h2, h3, h4 {
   border-radius: 10px;
 }
 ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.2); }
-
-.card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.5rem;
-}
