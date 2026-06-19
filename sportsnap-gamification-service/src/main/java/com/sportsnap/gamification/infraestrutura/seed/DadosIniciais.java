@@ -14,15 +14,6 @@ import com.sportsnap.gamification.dominio.atleta.Email;
 import com.sportsnap.gamification.dominio.carta.AtributoEsportivo;
 import com.sportsnap.gamification.dominio.carta.CartaOficial;
 import com.sportsnap.gamification.dominio.carta.CartaOficialRepositorio;
-import com.sportsnap.gamification.dominio.competicao.CompeticaoServico;
-import com.sportsnap.gamification.dominio.competicao.PontuacaoRanking;
-import com.sportsnap.gamification.dominio.competicao.PontuacaoRankingRepositorio;
-import com.sportsnap.gamification.dominio.competicao.TemporadaServico;
-import com.sportsnap.gamification.dominio.desafio.Cadencia;
-import com.sportsnap.gamification.dominio.desafio.CriterioDesafio;
-import com.sportsnap.gamification.dominio.desafio.Desafio;
-import com.sportsnap.gamification.dominio.desafio.DesafioServico;
-import com.sportsnap.gamification.dominio.desafio.TipoCriterio;
 import com.sportsnap.gamification.dominio.potencial.StatusPotencial;
 import com.sportsnap.gamification.dominio.potencial.StatusPotencialRepositorio;
 import com.sportsnap.gamification.dominio.sincronizacao.Licenca;
@@ -37,24 +28,15 @@ public class DadosIniciais implements CommandLineRunner {
     private final CartaOficialRepositorio cartaRepositorio;
     private final StatusPotencialRepositorio statusRepositorio;
     private final LicencaRepositorio licencaRepositorio;
-    private final TemporadaServico temporadaServico;
-    private final PontuacaoRankingRepositorio pontuacaoRepositorio;
-    private final DesafioServico desafioServico;
 
     public DadosIniciais(AtletaRepositorio atletaRepositorio,
                           CartaOficialRepositorio cartaRepositorio,
                           StatusPotencialRepositorio statusRepositorio,
-                          LicencaRepositorio licencaRepositorio,
-                          TemporadaServico temporadaServico,
-                          PontuacaoRankingRepositorio pontuacaoRepositorio,
-                          DesafioServico desafioServico) {
+                          LicencaRepositorio licencaRepositorio) {
         this.atletaRepositorio = atletaRepositorio;
         this.cartaRepositorio = cartaRepositorio;
         this.statusRepositorio = statusRepositorio;
         this.licencaRepositorio = licencaRepositorio;
-        this.temporadaServico = temporadaServico;
-        this.pontuacaoRepositorio = pontuacaoRepositorio;
-        this.desafioServico = desafioServico;
     }
 
     @Override
@@ -89,52 +71,5 @@ public class DadosIniciais implements CommandLineRunner {
 
         licencaRepositorio.registrar(new Licenca(maria.getId(), LocalDateTime.now().minusHours(1)));
         licencaRepositorio.registrar(new Licenca(joao.getId(),  LocalDateTime.now().minusDays(1)));
-
-        // Temporada vigente e pontuacao de ranking inicial para a competicao (F1)
-        temporadaServico.criar("CORRIDA", LocalDateTime.now().minusDays(1), LocalDateTime.now().plusDays(30));
-        pontuacaoRepositorio.salvar(new PontuacaoRanking(maria.getId(), CompeticaoServico.PR_INICIAL));
-        pontuacaoRepositorio.salvar(new PontuacaoRanking(joao.getId(),  CompeticaoServico.PR_INICIAL));
-
-        // Base adicional de corredores sincronizados para habilitar a Analise (F2: percentil/similaridade)
-        int[][] corredores = {
-            // velocidade, resistencia, tecnica
-            {72, 75, 68}, {84, 70, 80}, {66, 88, 71}, {90, 79, 85}
-        };
-        String[] nomes = {"Pedro Lima", "Lucas Reis", "Bruno Alves", "Rafa Souza"};
-        for (int i = 0; i < nomes.length; i++) {
-            var atleta = atletaRepositorio.salvar(new Atleta(nomes[i],
-                new Email("corredor" + (i + 1) + "@email.com")));
-            int[] v = corredores[i];
-            double overall = (v[0] + v[1] + v[2]) / 3.0;
-            cartaRepositorio.salvar(new CartaOficial(atleta.getId(), List.of(
-                new AtributoEsportivo("Velocidade",  v[0], 1.0, "CORRIDA"),
-                new AtributoEsportivo("Resistencia", v[1], 1.0, "CORRIDA"),
-                new AtributoEsportivo("Tecnica",     v[2], 1.0, "CORRIDA")
-            ), overall, LocalDateTime.now().minusDays(3)));
-            pontuacaoRepositorio.salvar(new PontuacaoRanking(atleta.getId(), CompeticaoServico.PR_INICIAL));
-        }
-
-        // Desafios iniciais para o Motor de Desafios (F2)
-        desafioServico.definir(new Desafio(
-            "Treino Firme",
-            List.of(CriterioDesafio.de(TipoCriterio.CONTAGEM_SINCRONIZACOES, 2)),
-            null, null, true, "ESFORCO", List.of(), Cadencia.NENHUMA, false));
-        desafioServico.definir(new Desafio(
-            "Overall de Elite",
-            List.of(CriterioDesafio.de(TipoCriterio.LIMIAR_OVERALL, 85)),
-            null, null, true, "ELITE", List.of(), Cadencia.NENHUMA, false));
-        // Desafios direcionados a atributos (alimentam a sugestao de ponto fraco)
-        desafioServico.definir(new Desafio(
-            "Acelere: Velocidade 85",
-            List.of(new CriterioDesafio(TipoCriterio.LIMIAR_ATRIBUTO, 85, "Velocidade")),
-            null, null, true, "VELOZ", List.of(), Cadencia.NENHUMA, false));
-        desafioServico.definir(new Desafio(
-            "Fôlego: Resistência 85",
-            List.of(new CriterioDesafio(TipoCriterio.LIMIAR_ATRIBUTO, 85, "Resistencia")),
-            null, null, true, "RESILIENTE", List.of(), Cadencia.NENHUMA, false));
-        desafioServico.definir(new Desafio(
-            "Refino: Técnica 85",
-            List.of(new CriterioDesafio(TipoCriterio.LIMIAR_ATRIBUTO, 85, "Tecnica")),
-            null, null, true, "TECNICO", List.of(), Cadencia.NENHUMA, false));
     }
 }

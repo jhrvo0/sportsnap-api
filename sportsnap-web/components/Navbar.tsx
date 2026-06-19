@@ -11,7 +11,7 @@ const linksAtleta = [
   { href: "/clube", label: "Pass ⭐️" },
   { href: "/favoritos", label: "Favoritos" },
   { href: "/checkin", label: "Check-in" },
-  { href: "/gamificacao", label: "Gamificação" },
+  { href: "/social", label: "Social" },
   { href: "/ranking", label: "Ranking" },
   { href: "/spots", label: "Spots" },
   { href: "/sessoes", label: "Sessões" },
@@ -20,12 +20,12 @@ const linksAtleta = [
 const linksFotografo = [
   { href: "/lotes", label: "Meus Álbuns" },
   { href: "/upload", label: "Upload" },
+  { href: "/social", label: "Social" },
   { href: "/spots", label: "Spots" },
   { href: "/sessoes", label: "Sessões" },
 ];
 
 const linksPublicos = [
-  { href: "/gamificacao", label: "Gamificação" },
   { href: "/ranking", label: "Ranking" },
   { href: "/spots", label: "Spots" },
 ];
