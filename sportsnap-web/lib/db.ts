@@ -69,6 +69,8 @@ export type CartaOficial = {
 
 const STORAGE_KEY = "sportsnap_db";
 
+export type CustomSport = { id: string; label: string };
+
 type DBData = {
   spots: Spot[];
   sessoes: Sessao[];
@@ -81,6 +83,7 @@ type DBData = {
   fotografos: Fotografo[];
   cartas: CartaOficial[];
   shadowStats: ShadowStats[];
+  customSports: CustomSport[];
 };
 
 const INITIAL_DATA: DBData = {
@@ -123,6 +126,7 @@ const INITIAL_DATA: DBData = {
   fotografos: [
     { id: 2, nome: "Antônio Paes", email: "antonio@foto.com" }
   ],
+  customSports: [],
   cartas: [
     { 
       atletaId: 1, 
@@ -220,6 +224,11 @@ class SportSnapDB {
     return this.data[key];
   }
 
+  set<K extends keyof DBData>(key: K, value: DBData[K]): void {
+    this.data[key] = value;
+    this.save();
+  }
+
   // Buscas genéricas
   find<K extends keyof DBData>(key: K, predicate: (item: DBData[K][number]) => boolean): DBData[K][number] | undefined {
     return (this.data[key] as any[]).find(predicate);
@@ -312,6 +321,29 @@ class SportSnapDB {
         ultimaSincronizacao: c.ultimaSincronizacao,
         sincronizada: true
       }));
+  }
+
+  getDefaultSpots(): Spot[] {
+    return [
+      { id: 1, nome: "Praia de Stella Maris", latitude: -12.9463, longitude: -38.3308, descricao: "Excelente pico de surf em Salvador." },
+      { id: 2, nome: "Pista da Costeira",     latitude: -27.6083, longitude: -48.5492, descricao: "Pista de skate clássica de Floripa." },
+      { id: 3, nome: "Aterro do Flamengo",    latitude: -22.9367, longitude: -43.1729, descricao: "Ótimo para corrida ao ar livre." },
+      { id: 4, nome: "Campo do Retiro",       latitude: -23.5505, longitude: -46.6333, descricao: "Campo society com gramado sintético." },
+      { id: 5, nome: "Ciclovia da Orla",      latitude: -22.9110, longitude: -43.1726, descricao: "Ciclovia ao longo da orla carioca." },
+    ];
+  }
+
+  getCustomSports(): CustomSport[] {
+    return [...(this.data.customSports || [])];
+  }
+
+  addCustomSport(nome: string, emoji: string): string {
+    const id = `custom_${nome.toLowerCase().replace(/\s+/g, "_")}_${Date.now()}`;
+    const label = `${emoji} ${nome}`;
+    this.data.customSports = this.data.customSports || [];
+    this.data.customSports.push({ id, label });
+    this.save();
+    return id;
   }
 }
 

@@ -124,13 +124,6 @@ public class PerfilSteps {
         assertEquals(perfilEsperado.getId(), sugestoes.get(0).getPerfil().getId());
     }
 
-    @E("o Usuario {int} segue o Usuario {int}")
-    public void usuarioSegueOutro(Integer seguidorId, Integer seguidoId) {
-        var seguidor = perfilRepositorio.obterPorUsuario(new AtletaId(seguidorId)).orElseThrow();
-        var seguido  = perfilRepositorio.obterPorUsuario(new AtletaId(seguidoId)).orElseThrow();
-        conexaoServico.seguir(seguidor.getId(), seguido.getId());
-    }
-
     @Entao("a sugestao nao inclui o Perfil do Usuario {int}")
     public void sugestaoNaoInclui(Integer usuarioId) {
         var perfilId = perfilRepositorio.obterPorUsuario(new AtletaId(usuarioId))
