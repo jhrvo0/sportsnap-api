@@ -30,7 +30,8 @@ public class CheckInRepositorioMemoria implements CheckInRepositorio {
                                     checkIn.getHorario(),
                                     checkIn.getCoordenada(),
                                     checkIn.isCancelado(),
-                                    checkIn.temAtividadeRegistrada());
+                                    checkIn.temAtividadeRegistrada(),
+                                    checkIn.getCheckoutHorario());
             armazem.put(novoId, novo);
             return novo;
         }

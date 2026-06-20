@@ -1,26 +1,23 @@
 package com.sportsnap.session.infraestrutura.persistencia.jpa;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
-import jakarta.transaction.Transactional;
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
-
 import com.sportsnap.session.aplicacao.sessao.SessaoRepositorioAplicacao;
 import com.sportsnap.session.aplicacao.sessao.SessaoResumo;
 import com.sportsnap.session.dominio.sessao.Sessao;
 import com.sportsnap.session.dominio.sessao.SessaoId;
 import com.sportsnap.session.dominio.sessao.SessaoRepositorio;
 import com.sportsnap.session.dominio.spot.SpotId;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 @Entity
 @Table(name = "SESSAO")
@@ -37,7 +34,7 @@ class SessaoJpa {
 
 interface SessaoJpaRepository extends JpaRepository<SessaoJpa, Integer> {
     List<SessaoJpa> findBySpotId(int spotId);
-    List<SessaoJpa> findByCanceladaFalse();
+
     List<SessaoResumo> findSessaoResumoBy();
 }
 
@@ -82,6 +79,11 @@ class SessaoRepositorioImpl implements SessaoRepositorio, SessaoRepositorioAplic
                 && s.periodoFim != null && !s.periodoFim.isBefore(inicio))
             .map(mapeador::paraDominio)
             .toList();
+    }
+
+    @Override
+    public void remover(SessaoId id) {
+        repositorio.deleteById(id.getId());
     }
 
     @Transactional

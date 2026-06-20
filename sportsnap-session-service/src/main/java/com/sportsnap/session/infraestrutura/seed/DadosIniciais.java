@@ -135,11 +135,31 @@ public class DadosIniciais implements CommandLineRunner {
             agora.minusHours(1), 5.0, 1800L,
             Intensidade.MEDIA, 40.0, 5, "Corrida na areia antes do surf", "CHECKIN", null);
 
+        // Maria — histórico de atividades manuais para gráfico de evolução real
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(28), 5.0, 1620L, 5, "Trote leve inicial", null);
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(25), 6.2, 1920L, 6, "Corrida urbana constante", null);
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(22), 5.5, 1710L, 5, "Treino regenerativo", null);
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(19), 8.0, 2400L, 7, "Corrida ritmada", null);
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(16), 7.5, 2325L, 6, "Treino em fim de tarde", null);
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(13), 10.0, 3000L, 8, "Primeiro long run", null);
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(10), 8.5, 2635L, 6, "Pace estável no parque", null);
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(7), 12.0, 3480L, 8, "Treino de resistência forte", null);
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(4), 9.0, 2745L, 7, "Treino de tiros curtos", null);
+        atividadeServico.registrarManual(new AtletaId(1), "CORRIDA", agora.minusDays(2), 15.0, 4410L, 9, "Melhor tempo nos 15km", null);
+
         // João — treino de surf
         atividadeServico.registrarComCheckIn(
             new AtletaId(2), ciJoao1.getId(), "SURF",
             agora.minusHours(2), 0.0, 7200L,
             Intensidade.ALTA, 80.0, 8, "Swell excelente, 15 ondas surfadas", "CHECKIN", null);
+
+        // João — histórico de atividades manuais para gráfico de evolução real (usando métricas customizadas de surf)
+        atividadeServico.registrarManual(new AtletaId(2), "SURF", agora.minusDays(25), 0.0, 5400L, 6, "Mar um pouco flat, bom para testar manobras", "{\"ondas\":8,\"velocidadeMax\":26.5}");
+        atividadeServico.registrarManual(new AtletaId(2), "SURF", agora.minusDays(20), 0.0, 6000L, 7, "Boas ondas de manhã cedo", "{\"ondas\":11,\"velocidadeMax\":29.8}");
+        atividadeServico.registrarManual(new AtletaId(2), "SURF", agora.minusDays(15), 0.0, 4800L, 6, "Sessão curta pós-trabalho", "{\"ondas\":6,\"velocidadeMax\":24.2}");
+        atividadeServico.registrarManual(new AtletaId(2), "SURF", agora.minusDays(10), 0.0, 7200L, 8, "Mar clássico, altas ondas", "{\"ondas\":15,\"velocidadeMax\":34.1}");
+        atividadeServico.registrarManual(new AtletaId(2), "SURF", agora.minusDays(5), 0.0, 5400L, 7, "Treino de batidas e rasgadas", "{\"ondas\":10,\"velocidadeMax\":31.3}");
+        atividadeServico.registrarManual(new AtletaId(2), "SURF", agora.minusDays(2), 0.0, 6600L, 9, "Swell clássico com vento terral", "{\"ondas\":14,\"velocidadeMax\":35.7}");
 
         // Ana — sessão de skate
         atividadeServico.registrarComCheckIn(

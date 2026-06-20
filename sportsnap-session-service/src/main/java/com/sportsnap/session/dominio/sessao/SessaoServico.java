@@ -23,6 +23,7 @@ public class SessaoServico {
     public Sessao cadastrar(SpotId spotId, Periodo periodo, String descricao) {
         spotRepositorio.obter(spotId)
             .orElseThrow(() -> new IllegalArgumentException("Spot nao encontrado para cadastro de Sessao: " + spotId));
+        validarInicioFuturo(periodo);
         var sessao = new Sessao(spotId, periodo, descricao);
         return repositorio.salvar(sessao);
     }
@@ -57,7 +58,36 @@ public class SessaoServico {
     public Sessao atualizar(SessaoId id, SpotId spotId, Periodo periodo, String descricao) {
         notNull(id, "O id da Sessao nao pode ser nulo");
         var existente = obter(id);
+        var agora = LocalDateTime.now();
+        if (existente.isCancelada()) {
+            throw new IllegalStateException("Sessao cancelada nao pode ser editada");
+        }
+        if (existente.getPeriodo().terminou(agora)) {
+            throw new IllegalStateException("Sessao encerrada nao pode ser editada");
+        }
+        if (existente.getPeriodo().jaIniciou(agora)
+            && !existente.getPeriodo().getInicio().equals(periodo.getInicio())) {
+            throw new IllegalStateException("Sessao em andamento nao pode alterar inicio");
+        }
+        if (!existente.getPeriodo().jaIniciou(agora)) {
+            validarInicioFuturo(periodo);
+        }
         var atualizado = new Sessao(existente.getId(), spotId, periodo, descricao, existente.isCancelada());
         return repositorio.salvar(atualizado);
+    }
+
+    public void remover(SessaoId id) {
+        var sessao = obter(id);
+        if (!sessao.getPeriodo().terminou(LocalDateTime.now())) {
+            throw new IllegalStateException("Somente Sessao encerrada pode ser removida");
+        }
+        repositorio.remover(id);
+    }
+
+    private void validarInicioFuturo(Periodo periodo) {
+        notNull(periodo, "O periodo da Sessao nao pode ser nulo");
+        if (periodo.getInicio().isBefore(LocalDateTime.now().minusSeconds(5))) {
+            throw new IllegalArgumentException("O inicio da Sessao nao pode ficar no passado");
+        }
     }
 }

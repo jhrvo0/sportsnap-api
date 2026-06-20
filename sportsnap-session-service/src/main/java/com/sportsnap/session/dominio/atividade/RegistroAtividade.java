@@ -33,7 +33,6 @@ public class RegistroAtividade {
                              Integer esforcePercebido, String observacoes, String origemRegistro,
                              String metricas, LocalDateTime criadoEm, LocalDateTime atualizadoEm) {
         notNull(atletaId, "O id do Atleta nao pode ser nulo");
-        notNull(checkInId, "O check-in/spot associado nao pode ser nulo");
         notBlank(esporte, "O esporte nao pode estar em branco");
         notNull(data, "A data nao pode ser nula");
         isTrue(distancia >= 0, "A distancia nao pode ser negativa");

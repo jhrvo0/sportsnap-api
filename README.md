@@ -1,140 +1,94 @@
 # SportSnap API
 
-Ecossistema digital que une performance esportiva real a fotografia profissional. Atletas registram treinos, fotógrafos capturam momentos esportivos, e a plataforma conecta os dois através de licenciamento de imagens e uma camada social completa.
+SportSnap e uma plataforma web que conecta performance esportiva real, fotografia profissional e rede social.
 
 ## Arquitetura
 
-O sistema é composto por **3 microsserviços** independentes seguindo **Clean Architecture** e **DDD**:
+O repositorio esta organizado em 3 microservicos seguindo Clean Architecture e DDD:
 
-```
-sportsnap-api/
-├── sportsnap-social-service      — Core Domain (Social, Perfil, Feed, Conexões)
-├── sportsnap-marketplace-service — Supporting Domain (Fotos, Licenças, Marketplace)
-├── sportsnap-session-service     — Generic Domain (Spots, Sessões, Check-ins)
-└── docs/                         — Documentação do projeto
-```
+- `sportsnap-session-service`: spots, sessoes, check-ins e registro real de atividades
+- `sportsnap-marketplace-service`: lotes, fotos, licencas, sugestao de fotos e split financeiro
+- `sportsnap-social-service`: perfil social, conexoes, feed, notificacoes, sincronizacao de carta e ranking
 
-| Módulo | Responsabilidade | Porta |
-|---|---|---|
-| **Social** | Perfil social, conexões, feed, posts esportivos, comentários, notificações, ranking, sincronização de carta | 8081 |
-| **Marketplace** | Fotos, lotes, licenças de imagem, split financeiro, motor de sugestão, assinatura | 8082 |
-| **Session** | Spots, sessões, check-ins, registros de atividade real | 8083 |
+## Stack
 
-## Histórias por Integrante
+- Java 21
+- Spring Boot 3.4.4
+- Spring Data JPA + Flyway
+- H2 em memoria para testes
+- Cucumber 7.20 + JUnit 5
+- Next.js 14 com TypeScript e TailwindCSS
 
-| Integrante | Histórias |
-|---|---|
-| **Antônio Paes** | H03 — Gerenciar Lotes de Fotos · H04 — Dashboard do Fotógrafo |
-| **Galileu Calaça** | H09 — Perfil Social e Rede de Conexões · H10 — Feed, Posts Esportivos e Notificações |
-| **Marco Maciel** | H05 — Comprar Licença · H06 — Motor de Sugestão |
-| **João Henrique** | H01 — Gerenciar Sessão · H02 — Check-in e Registro Real de Atividade |
+## Historias por integrante
 
-## Padrões de Projeto GoF Implementados
+- `Joao Henrique`: H01 - Gerenciar Sessao de Treino, H02 - Check-in e Registro de Atividade, H03 - Registro Real de Atividades
+- `Antonio Paes`: H03 - Gerenciar Lote de Fotos, H04 - Dashboard do Fotografo
+- `Marco Maciel`: H05 - Comprar Licenca de Foto com Split Financeiro, H06 - Motor de Sugestao de Fotos
+- `Galileu Calaca`: H07 - Sincronizar Carta do Atleta, H08 - Ranking e Evolucao da Carta, H09 - Perfil Social e Rede de Conexoes, H10 - Conexoes, Pedidos e Bloqueios, H11 - Feed de Atividades e Curtidas, H12 - Notificacoes
 
-| Padrão | Integrante | Serviço | Arquivos `.java` envolvidos |
-|---|---|---|---|
-| **Strategy** | Galileu Calaça | Social | `dominio/conexao/ConexaoServico.java` (algoritmo de sugestão por score ponderado) |
-| **Observer** | Galileu Calaça | Social | `dominio/evento/EventoBarramento.java` (interface), `infraestrutura/evento/EventoBarramentoSpring.java`, `infraestrutura/evento/SocialEventoListener.java` |
-| **Repository** | Galileu Calaça | Social | `dominio/perfil/PerfilRepositorio.java`, `dominio/conexao/ConexaoRepositorio.java`, `dominio/feed/ItemFeedRepositorio.java`, `dominio/notificacao/NotificacaoRepositorio.java` (interfaces no domínio, implementações em infraestrutura) |
-| **Decorator** | Marco Maciel | Marketplace | `dominio/foto/FotoDecorador.java`, `dominio/foto/FotoComMarcaDagua.java`, `dominio/foto/FotoPreviewBasico.java` |
+## Historias BDD
 
-## Stack Tecnológica
+O projeto possui 13 features BDD principais, porque o numero `H03` aparece em dois contextos diferentes.
 
-| Camada | Tecnologia |
-|---|---|
-| Linguagem | Java 17 |
-| Framework | Spring Boot 3.4.4 |
-| ORM | JPA (Spring Data JPA) + Flyway |
-| Banco de dados | H2 in-memory |
-| Testes BDD | Cucumber 7.20 + JUnit 5 |
-| Validação de domínio | Apache Commons Lang3 (`Validate`) |
-| Build | Maven (wrapper incluído) |
-| Frontend | Next.js 14 (App Router) + TypeScript + TailwindCSS |
-| Arquitetura | Clean Architecture + DDD |
+| Modulo | Feature | Historias |
+| --- | --- | --- |
+| Session | `h01-gerenciar-sessao.feature` | H01 - Gerenciar Sessao de Treino |
+| Session | `h02-checkin-atividade.feature` | H02 - Check-in e Registro de Atividade |
+| Session | `h03-registro-real-atividade.feature` | H03 - Registro Real de Atividades |
+| Marketplace | `h03-gerenciar-lote.feature` | H03 - Gerenciar Lote de Fotos |
+| Marketplace | `h04-dashboard-fotografo.feature` | H04 - Dashboard do Fotografo |
+| Marketplace | `h05-comprar-licenca.feature` | H05 - Comprar Licenca de Foto com Split Financeiro |
+| Marketplace | `h06-motor-sugestao.feature` | H06 - Motor de Sugestao de Fotos |
+| Social | `h07-sincronizar-carta.feature` | H07 - Sincronizar Carta do Atleta |
+| Social | `h08-ranking-evolucao.feature` | H08 - Ranking e Evolucao da Carta |
+| Social | `h09-perfil-social.feature` | H09 - Perfil Social e Rede de Conexoes |
+| Social | `h10-conexoes.feature` | H10 - Conexoes, Pedidos e Bloqueios |
+| Social | `h11-feed.feature` | H11 - Feed de Atividades e Curtidas |
+| Social | `h12-notificacoes.feature` | H12 - Notificacoes |
 
-## Pré-requisitos
+## Ordem de apresentacao sugerida
 
-- **Java 17+** (JDK)
-- **Maven 3.9+** (ou use o wrapper `./mvnw`)
-- **Node.js 18+** + npm (para o frontend)
+Para seguir o enunciado, a apresentacao pode ser feita nesta ordem:
 
-## Como Executar
+1. Entidades independentes e base do dominio: `Spot`, `Fotografo` e `Atleta/Perfil`
+2. Entidades que dependem das anteriores: `Sessao`, `Lote`, `Conexao` e `PedidoConexao`
+3. Fluxos dependentes das entidades principais: `CheckIn`, `RegistroAtividade`, `Foto`, `LicencaDeImagem`, `Feed` e `Notificacao`
+4. Funcionalidades de consolidacao: `Sincronizacao`, `Ranking`, `Evolucao Real` e `Dashboard`
 
-```bash
-# Terminal 1 — Social (porta 8081)
-./mvnw -pl sportsnap-social-service spring-boot:run
+## Documentacao
 
-# Terminal 2 — Marketplace (porta 8082)
-./mvnw -pl sportsnap-marketplace-service spring-boot:run
+- [docs/dominio.md](docs/dominio.md): dominio, linguagem onipresente, DDD e regras de negocio
+- [docs/user-story-map.md](docs/user-story-map.md): mapa das historias e operacoes
+- [docs/prototipos.md](docs/prototipos.md): prototipos e fluxos de interface
+- [docs/sportsnap.cml](docs/sportsnap.cml): modelo Context Mapper
+- [docs/atividade_atualizada.docx](docs/atividade_atualizada.docx): documento da entrega atualizado
 
-# Terminal 3 — Session (porta 8083)
-./mvnw -pl sportsnap-session-service spring-boot:run
-
-# Terminal 4 — Frontend (porta 3000)
-cd sportsnap-web && npm run dev
-```
-
-## Como Executar os Testes BDD
+## Como executar
 
 ```bash
-# Serviço Social (H07-H12)
-./mvnw -pl sportsnap-social-service test
-
-# Serviço Session (H01-H02)
+# Session
 ./mvnw -pl sportsnap-session-service test
 
-# Serviço Marketplace (H03-H06)
+# Marketplace
 ./mvnw -pl sportsnap-marketplace-service test
+
+# Social
+./mvnw -pl sportsnap-social-service test
+
+# Frontend
+cd sportsnap-web
+npm run dev
 ```
 
-## Estrutura de Pacotes (Clean Architecture)
+## Padroes de projeto implementados
 
-Cada módulo segue a mesma estrutura, seguindo o padrão de referência do professor:
+| Padrao | Integrante principal | Arquivos Java envolvidos |
+| --- | --- | --- |
+| `Observer` | `Joao Henrique` | `sportsnap-session-service/src/main/java/com/sportsnap/session/dominio/evento/EventoBarramento.java`, `sportsnap-session-service/src/main/java/com/sportsnap/session/infraestrutura/evento/EventoBarramentoSpring.java`, `sportsnap-session-service/src/main/java/com/sportsnap/session/dominio/checkin/CheckInServico.java`, `sportsnap-session-service/src/main/java/com/sportsnap/session/dominio/atividade/AtividadeServico.java` |
+| `Decorator` | `Antonio Paes` | `sportsnap-marketplace-service/src/main/java/com/sportsnap/marketplace/dominio/foto/FotoDecorador.java`, `sportsnap-marketplace-service/src/main/java/com/sportsnap/marketplace/dominio/foto/FotoComMarcaDagua.java`, `sportsnap-marketplace-service/src/main/java/com/sportsnap/marketplace/dominio/foto/FotoPreviewBasico.java` |
+| `Strategy` | `Marco Maciel` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/xp/CalculoXpEstrategia.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/xp/EstrategiaXpCorrida.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/xp/EstrategiaXpMusculacao.java` |
+| `Iterator` | `Galileu Calaca` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/ranking/RankingIterador.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/ranking/RankingServico.java` |
+| `Proxy` | `Galileu Calaca` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/ranking/RankingProxi.java` |
+| `Template Method` | `Galileu Calaca` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/sincronizacao/TemplateSincronizacao.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/sincronizacao/SincronizacaoPadrao.java` |
 
-```
-com.sportsnap.<servico>/
-├── dominio/                    # PURO — zero dependências externas
-│   ├── <contexto>/
-│   │   ├── XxxId.java          # Value Object para identidade
-│   │   ├── Xxx.java            # Entidade (2 construtores + Validate + Domain Events)
-│   │   ├── XxxRepositorio.java # Interface (port)
-│   │   └── XxxServico.java     # Serviço de domínio
-│   └── evento/EventoBarramento.java
-├── aplicacao/                  # DTOs e serviços de consulta (read model)
-├── apresentacao/               # REST Controllers
-└── infraestrutura/
-    ├── persistencia/jpa/       # @Entity + JpaRepository + @Repository impl (mesmo arquivo)
-    └── evento/                 # EventoBarramentoSpring
-```
-
-## Cenários BDD (Cucumber)
-
-| Módulo | Feature | História |
-|---|---|---|
-| Session | `h01-gerenciar-sessao.feature` | H01 — Gerenciar Sessão de Treino |
-| Session | `h02-checkin-atividade.feature` | H02 — Check-in e Atividade |
-| Marketplace | `h03-gerenciar-lote.feature` | H03 — Gerenciar Lotes de Fotos |
-| Marketplace | `h04-dashboard-fotografo.feature` | H04 — Dashboard do Fotógrafo |
-| Marketplace | `h05-comprar-licenca.feature` | H05 — Comprar Licença |
-| Marketplace | `h06-motor-sugestao.feature` | H06 — Motor de Sugestão |
-| Social | `h09-perfil-social.feature` | H09 — Perfil Social e Rede de Conexões |
-| Social | `h10-conexoes.feature` | H10 — Conexões, Pedidos e Bloqueios |
-| Social | `h11-feed.feature` | H11 — Feed de Atividades e Curtidas |
-| Social | `h12-notificacoes.feature` | H12 — Notificações |
-
-## Documentação
-
-- [`docs/dominio.md`](docs/dominio.md) — Descrição do domínio, linguagem onipresente, regras de negócio
-- [`docs/user-story-map.md`](docs/user-story-map.md) — Mapa das histórias com operações detalhadas
-- [`docs/prototipos.md`](docs/prototipos.md) — Protótipos de baixa e alta fidelidade
-- [`docs/sportsnap.cml`](docs/sportsnap.cml) — Modelo Context Mapper (DDD)
-
-## Equipe
-
-- **Antônio Paes** — [@AntonioPaess](https://github.com/AntonioPaess)
-- **Galileu Calaça** — [@GalileuCMMoares](https://github.com/GalileuCMMoares)
-- **Marco Maciel** — [@oMarcoMaciel](https://github.com/oMarcoMaciel)
-- **João Henrique** — [@jhrvo0](https://github.com/jhrvo0)
-
-**Disciplina:** Engenharia de Requisitos
-**Instituição:** CESAR School
+Os padroes aparecem de forma distribuida entre os modulos e sustentam as regras de negocio, a extensibilidade e o desacoplamento entre dominio, infraestrutura e apresentacao.

@@ -64,6 +64,13 @@ public class SessaoRepositorioMemoria implements SessaoRepositorio {
     }
 
     @Override
+    public void remover(SessaoId id) {
+        if (id != null) {
+            armazem.remove(id.getId());
+        }
+    }
+
+    @Override
     public void limpar() {
         armazem.clear();
         sequencia.set(1);

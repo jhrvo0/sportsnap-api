@@ -11,6 +11,7 @@ export type CheckInDto = {
   longitude: number;
   cancelado?: boolean;
   atividadeRegistrada?: boolean;
+  checkoutHorario?: string | null;
 };
 
 export async function listarSpots(): Promise<Spot[]> {
@@ -121,4 +122,12 @@ export async function cancelarCheckIn(id: number): Promise<void> {
     method: "POST",
   });
   if (!r.ok) throw new Error("Erro ao cancelar check-in");
+}
+
+export async function fazerCheckoutCheckIn(id: number): Promise<CheckInDto> {
+  const r = await fetch(`${SESSION_URL}/api/checkins/${id}/checkout`, {
+    method: "POST",
+  });
+  if (!r.ok) throw new Error("Erro ao fazer checkout");
+  return r.json();
 }

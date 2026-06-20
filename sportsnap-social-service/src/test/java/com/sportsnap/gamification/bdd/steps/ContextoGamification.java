@@ -3,6 +3,7 @@ package com.sportsnap.gamification.bdd.steps;
 import com.sportsnap.gamification.dominio.atleta.AtletaRepositorio;
 import com.sportsnap.gamification.dominio.bloqueio.BloqueioRepositorio;
 import com.sportsnap.gamification.dominio.carta.CartaOficialRepositorio;
+import com.sportsnap.gamification.dominio.comentario.ComentarioRepositorio;
 import com.sportsnap.gamification.dominio.conexao.ConexaoRepositorio;
 import com.sportsnap.gamification.dominio.conexao.PedidoConexaoRepositorio;
 import com.sportsnap.gamification.dominio.feed.CurtidaRepositorio;
@@ -10,6 +11,7 @@ import com.sportsnap.gamification.dominio.feed.ItemFeedRepositorio;
 import com.sportsnap.gamification.dominio.notificacao.NotificacaoRepositorio;
 import com.sportsnap.gamification.dominio.perfil.PerfilRepositorio;
 import com.sportsnap.gamification.dominio.potencial.StatusPotencialRepositorio;
+import com.sportsnap.gamification.dominio.post.PostEsportivoRepositorio;
 import com.sportsnap.gamification.dominio.sincronizacao.LicencaRepositorio;
 import io.cucumber.java.Before;
 import io.cucumber.java.pt.Dado;
@@ -28,6 +30,8 @@ public class ContextoGamification {
     @Autowired private ItemFeedRepositorio itemFeedRepositorio;
     @Autowired private CurtidaRepositorio curtidaRepositorio;
     @Autowired private NotificacaoRepositorio notificacaoRepositorio;
+    @Autowired private PostEsportivoRepositorio postEsportivoRepositorio;
+    @Autowired private ComentarioRepositorio comentarioRepositorio;
     @Autowired private ColetorDeEventos coletorDeEventos;
 
     @Before
@@ -43,6 +47,8 @@ public class ContextoGamification {
         statusRepositorio.limpar();
         cartaRepositorio.limpar();
         atletaRepositorio.limpar();
+        comentarioRepositorio.limpar();
+        postEsportivoRepositorio.limpar();
         coletorDeEventos.limpar();
     }
 

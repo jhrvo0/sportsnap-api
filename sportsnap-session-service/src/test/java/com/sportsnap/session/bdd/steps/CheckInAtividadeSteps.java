@@ -10,6 +10,7 @@ import com.sportsnap.session.dominio.checkin.CheckIn.CheckInRealizadoEvento;
 import com.sportsnap.session.dominio.checkin.CheckInServico;
 import com.sportsnap.session.dominio.sessao.Periodo;
 import com.sportsnap.session.dominio.sessao.Sessao;
+import com.sportsnap.session.dominio.sessao.SessaoRepositorio;
 import com.sportsnap.session.dominio.sessao.SessaoServico;
 import com.sportsnap.session.dominio.spot.Coordenada;
 import com.sportsnap.session.dominio.spot.Spot;
@@ -29,6 +30,7 @@ public class CheckInAtividadeSteps {
 
     @Autowired private SpotServico spotServico;
     @Autowired private SessaoServico sessaoServico;
+    @Autowired private SessaoRepositorio sessaoRepositorio;
     @Autowired private CheckInServico checkInServico;
     @Autowired private AtividadeServico atividadeServico;
     @Autowired private ColetorDeEventos coletorDeEventos;
@@ -45,16 +47,16 @@ public class CheckInAtividadeSteps {
     public void sessaoAtiva() {
         spot = spotServico.cadastrar("Spot Ativa", new Coordenada(-8.0631, -34.8711), "Teste");
         LocalDateTime agora = LocalDateTime.now();
-        sessao = sessaoServico.cadastrar(spot.getId(),
-            new Periodo(agora.minusHours(1), agora.plusHours(2)), "Sessao ativa");
+        sessao = sessaoRepositorio.salvar(new Sessao(spot.getId(),
+            new Periodo(agora.minusHours(1), agora.plusHours(2)), "Sessao ativa"));
     }
 
     @Dado("que existe uma Sessao ja encerrada")
     public void sessaoEncerrada() {
         spot = spotServico.cadastrar("Spot Ontem", new Coordenada(-8.06, -34.87), "Teste");
         LocalDateTime ontem = LocalDateTime.now().minusDays(1);
-        sessao = sessaoServico.cadastrar(spot.getId(),
-            new Periodo(ontem.minusHours(2), ontem.minusHours(1)), "Sessao passada");
+        sessao = sessaoRepositorio.salvar(new Sessao(spot.getId(),
+            new Periodo(ontem.minusHours(2), ontem.minusHours(1)), "Sessao passada"));
     }
 
     @Quando("o Atleta {int} realiza CheckIn na Sessao")

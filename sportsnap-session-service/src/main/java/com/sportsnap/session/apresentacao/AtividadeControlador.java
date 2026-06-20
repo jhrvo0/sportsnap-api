@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.sportsnap.session.dominio.atividade.AtividadeServico;
 import com.sportsnap.session.dominio.atividade.RegistroAtividade;
@@ -26,24 +28,25 @@ public class AtividadeControlador {
 
     @PostMapping
     public RegistroAtividadeDto registrar(@RequestBody RegistroAtividadeDto dto) {
-        if (dto.checkInId == null) {
-            throw new IllegalArgumentException("O check-in/spot associado nao pode ser nulo");
+        var data = dto.data != null ? dto.data : LocalDateTime.now();
+        RegistroAtividade salvo;
+
+        if (dto.checkInId != null) {
+            var intensidade = dto.intensidade != null ? Intensidade.apartirDeTexto(dto.intensidade) : null;
+            salvo = atividadeServico.registrarComCheckIn(
+                new AtletaId(dto.atletaId), new CheckInId(dto.checkInId),
+                dto.esporte, data, dto.distancia, dto.duracaoSegundos,
+                intensidade, dto.xpCalculado, dto.esforcoPercebido,
+                dto.observacoes, dto.origemRegistro != null ? dto.origemRegistro : "CHECKIN",
+                dto.metricas
+            );
+        } else {
+            salvo = atividadeServico.registrarManual(
+                new AtletaId(dto.atletaId), dto.esporte, data,
+                dto.distancia, dto.duracaoSegundos,
+                dto.esforcoPercebido, dto.observacoes, dto.metricas
+            );
         }
-        var intensidade = dto.intensidade != null ? Intensidade.apartirDeTexto(dto.intensidade) : null;
-        var salvo = atividadeServico.registrarComCheckIn(
-            new AtletaId(dto.atletaId),
-            new CheckInId(dto.checkInId),
-            dto.esporte,
-            dto.data != null ? dto.data : LocalDateTime.now(),
-            dto.distancia,
-            dto.duracaoSegundos,
-            intensidade,
-            dto.xpCalculado,
-            dto.esforcoPercebido,
-            dto.observacoes,
-            dto.origemRegistro != null ? dto.origemRegistro : "CHECKIN",
-            dto.metricas
-        );
         return paraDto(salvo);
     }
 

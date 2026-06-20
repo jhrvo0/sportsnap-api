@@ -27,7 +27,8 @@ import {
   listarSessoes, 
   realizarCheckIn as apiRealizarCheckIn, 
   listarCheckIns as apiListarCheckIns, 
-  cancelarCheckIn as apiCancelarCheckIn 
+  cancelarCheckIn as apiCancelarCheckIn,
+  fazerCheckoutCheckIn as apiFazerCheckoutCheckIn
 } from "@/lib/spots";
 
 // --- Metric Templates Library ---
@@ -145,16 +146,23 @@ export default function CheckinPage() {
     }
 
     try {
+      const localCheckIns = db.filter("checkins", c => c.atletaId === sessao.id);
       const cks = await apiListarCheckIns(sessao.id);
-      const mappedCks = cks.map(c => ({
+      const mappedCks = cks.map(c => {
+        const local = localCheckIns.find(item => item.id === c.id);
+        return {
         id: c.id!,
         atletaId: c.atletaId,
         sessaoId: c.sessaoId,
         horario: c.horario ? c.horario.toString() : "",
-        cancelado: c.cancelado || false,
-        temAtividade: c.atividadeRegistrada || false
-      }));
-      db.set("checkins", mappedCks);
+        checkoutHorario: c.checkoutHorario ?? local?.checkoutHorario ?? null,
+        cancelado: c.cancelado || local?.cancelado || false,
+        temAtividade: c.atividadeRegistrada || local?.temAtividade || false
+        };
+      });
+      const idsApi = new Set(mappedCks.map(c => c.id));
+      const somenteLocais = localCheckIns.filter(c => !idsApi.has(c.id));
+      db.set("checkins", [...mappedCks, ...somenteLocais]);
     } catch (e) {
       console.warn("Erro ao buscar checkins da API, usando DB local:", e);
     }
@@ -185,8 +193,13 @@ export default function CheckinPage() {
         }
         return {
           id: a.id!,
-          checkInId: a.checkInId!,
+          checkInId: a.checkInId ?? null,
           atletaId: a.atletaId || sessao.id,
+          esporte: a.esporte,
+          data: a.data,
+          distancia: a.distancia,
+          duracaoSegundos: a.duracaoSegundos,
+          origemRegistro: a.origemRegistro || (a.checkInId ? "CHECKIN" : "MANUAL"),
           sport: a.esporte.toLowerCase() as any,
           duracao: Math.round(a.duracaoSegundos / 60),
           intensidade: (a.intensidade?.toLowerCase() || "media") as any,
@@ -267,9 +280,18 @@ export default function CheckinPage() {
     
     await new Promise(resolve => setTimeout(resolve, 800));
     
-    db.update("checkins", checkInId, { checkoutHorario: new Date().toISOString() });
-    
-    setSuccessMessage("Checkout realizado com sucesso! Até o próximo treino.");
+    try {
+      const finalizado = await apiFazerCheckoutCheckIn(checkInId);
+      const checkoutHorario = finalizado.checkoutHorario ?? new Date().toISOString();
+      db.update("checkins", checkInId, { checkoutHorario });
+      setCheckIns(prev => prev.map(c => c.id === checkInId ? { ...c, checkoutHorario } : c));
+      setSuccessMessage("Checkout realizado com sucesso e salvo na API.");
+    } catch {
+      const checkoutHorario = new Date().toISOString();
+      db.update("checkins", checkInId, { checkoutHorario });
+      setCheckIns(prev => prev.map(c => c.id === checkInId ? { ...c, checkoutHorario } : c));
+      setSuccessMessage("Checkout registrado localmente. A API sera sincronizada quando estiver disponivel.");
+    }
     carregar();
     setSaving(false);
   }
@@ -392,7 +414,13 @@ export default function CheckinPage() {
       };
     });
 
-    const distanceVal = parseFloat(metricValues["distance"] || "0");
+    const distanceVal = parseFloat(
+      metricValues["distance"] ||
+      metricValues["distance_cycling"] ||
+      metricValues["distance_walking"] ||
+      metricValues["distance_swimming"] ||
+      "0"
+    );
     const formattedDate = new Date().toISOString().slice(0, 19);
 
     const payload: RegistroAtividadeDto = {

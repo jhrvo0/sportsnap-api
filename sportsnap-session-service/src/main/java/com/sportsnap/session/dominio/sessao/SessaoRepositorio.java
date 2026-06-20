@@ -18,5 +18,7 @@ public interface SessaoRepositorio {
 
     List<Sessao> listarPorPeriodo(LocalDateTime inicio, LocalDateTime fim);
 
+    void remover(SessaoId id);
+
     void limpar();
 }

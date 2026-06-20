@@ -1,4 +1,4 @@
-# Mapa de Historias do Usuario — SportSnap
+# Mapa de Historias do Usuario - SportSnap
 
 ## Personas
 
@@ -11,183 +11,236 @@
 
 ## User Story Map (Backbone)
 
-```
+```text
 ATLETA:     Treinar          Registrar Atividade    Comprar Foto       Evoluir Carta       Competir
 FOTOGRAFO:  Criar Lote       Fotografar             Gerenciar Lote     Acompanhar Vendas
+SOCIAL:     Conectar         Compartilhar          Interagir          Receber Notificacoes
 ```
 
-Cada backbone se desdobra em **uma historia completa** (CRUD + regras de negocio) — nao em verbos isolados.
+Cada backbone se desdobra em uma historia completa, com multiplas operacoes e regras de negocio.
 
 ---
 
-## 8 Historias Completas (1a Entrega)
+## 12 Historias Completas
 
-Cada historia abaixo e uma funcionalidade nao trivial com **multiplas operacoes** (cadastrar, consultar, editar, cancelar, validar), e nao apenas um verbo isolado. Todas as operacoes compoem uma jornada coerente do usuario.
+As historias abaixo cobrem o escopo funcional do SportSnap e atendem ao conjunto de BDDs do projeto.
 
----
+### H01 - Gerenciar Sessao de Treino  *(Joao Henrique)*
 
-### H01 — Gerenciar Sessao de Treino  *(João Henrique)*
-
-> Como **Atleta** ou **Fotografo**, quero gerenciar Sessoes esportivas em Spots para organizar treinos e saber onde aconteceram.
+> Como **Atleta** ou **Fotografo**, quero gerenciar sessoes esportivas em spots para organizar treinos e saber onde aconteceram.
 
 **Operacoes:**
-1. **Cadastrar Spot** (local fisico com coordenadas validadas)
-2. **Cadastrar Sessao** vinculada a um Spot, com janela temporal (inicio < fim)
-3. **Listar Sessoes ativas** (agora entre inicio e fim)
-4. **Consultar Sessao por id**
-5. **Cancelar Sessao** (apenas antes de iniciar)
-6. **Pesquisar Sessoes por Spot ou periodo**
+1. Cadastrar Spot com coordenadas validadas
+2. Cadastrar Sessao vinculada a um Spot, com janela temporal
+3. Listar Sessoes ativas
+4. Consultar Sessao por id
+5. Cancelar Sessao
+6. Pesquisar Sessoes por Spot ou periodo
 
 **Regras de negocio:**
 - Sessao nao pode ter fim anterior ao inicio
-- Coordenadas do Spot devem ser validas (latitude -90..90, longitude -180..180)
+- Coordenadas do Spot devem ser validas
 - Sessao cancelada nao aceita check-in
 - Sessao nao pode ser cancelada se ja iniciou
 
----
+### H02 - Gerenciar Check-in e Registro de Atividade  *(Joao Henrique)*
 
-### H02 — Gerenciar Check-in e Registro de Atividade  *(João Henrique)*
-
-> Como **Atleta**, quero fazer check-in em uma Sessao ativa, registrar minha performance, e consultar meu historico.
+> Como **Atleta**, quero fazer check-in em uma Sessao ativa, registrar minha performance e consultar meu historico.
 
 **Operacoes:**
-1. **Realizar CheckIn** em Sessao ativa (valida janela temporal)
-2. **Registrar Atividade** vinculada ao CheckIn (distancia, duracao, intensidade)
-3. **Listar meus CheckIns** (historico pessoal)
-4. **Consultar Atividades de um CheckIn**
-5. **Cancelar CheckIn** (apenas se nao tiver Atividade registrada)
-6. **Calcular XP acumulado** por CheckIn (emite evento de dominio)
+1. Realizar CheckIn em Sessao ativa
+2. Registrar Atividade vinculada ao CheckIn
+3. Listar meus CheckIns
+4. Consultar Atividades de um CheckIn
+5. Cancelar CheckIn
+6. Calcular XP acumulado por CheckIn
 
 **Regras de negocio:**
-- CheckIn so e aceito se `agora ∈ [sessao.inicio, sessao.fim]`
+- CheckIn so e aceito se estiver dentro da janela da Sessao
 - Atleta nao pode fazer check-in duplicado na mesma Sessao
-- XP = `distancia × multiplicador(intensidade)` com multiplicadores `alta=3, media=2, baixa=1`
+- XP usa multiplicador por intensidade
 - CheckIn com Atividade registrada nao pode ser cancelado
-- Registrar Atividade emite `AtividadeRegistradaEvento` (para o contexto de Gamification)
+- Registrar Atividade emite evento de dominio para gamificacao
 
----
+### H03 - Gerenciar Lote de Fotos  *(Antonio Paes)*
 
-### H03 — Gerenciar Lote de Fotos  *(Antônio Paes)*
-
-> Como **Fotografo**, quero criar e gerenciar Lotes de fotos vinculados a Sessoes para disponibiliza-los ao marketplace.
+> Como **Fotografo**, quero criar e gerenciar lotes de fotos vinculados a sessoes para disponibiliza-los ao marketplace.
 
 **Operacoes:**
-1. **Cadastrar Lote** vinculado a Sessao e Spot
-2. **Upload de Fotos** em lote (extrai EXIF)
-3. **Listar meus Lotes**
-4. **Editar descricao** do Lote
-5. **Remover Foto** do Lote (apenas se nao tiver licenca)
-6. **Arquivar Lote** (congela para evitar novas vendas)
+1. Cadastrar Lote vinculado a Sessao e Spot
+2. Upload de Fotos em lote
+3. Listar meus Lotes
+4. Editar descricao do Lote
+5. Remover Foto do Lote
+6. Arquivar Lote
 
 **Regras de negocio:**
 - Lote precisa de Sessao e Spot validos na criacao
 - Upload vazio e rejeitado
-- Cada Foto precisa de timestamp EXIF (usado pelo Motor de Match)
-- Foto com LicencaDeImagem emitida nao pode ser removida
-- Lote arquivado nao aceita upload de novas fotos
+- Cada Foto precisa de timestamp EXIF
+- Foto com licenca emitida nao pode ser removida
+- Lote arquivado nao aceita novas fotos
 
----
+### H04 - Dashboard do Fotografo  *(Antonio Paes)*
 
-### H04 — Dashboard do Fotografo  *(Antônio Paes)*
-
-> Como **Fotografo**, quero consultar metricas consolidadas dos meus Lotes e Vendas para tomar decisoes de negocio.
+> Como **Fotografo**, quero consultar metricas consolidadas dos meus lotes e vendas para tomar decisoes de negocio.
 
 **Operacoes:**
-1. **Consultar resumo do Fotografo** (total de lotes, fotos, licencas vendidas, receita)
-2. **Listar vendas por periodo**
-3. **Consultar detalhes de uma venda** (inclui SplitFinanceiro)
-4. **Consultar top fotos mais vendidas**
-5. **Consultar saldo disponivel** (soma dos SplitFinanceiro do fotografo)
-6. **Consultar Lote com estatisticas** (fotos, vendas, percentual convertido)
+1. Consultar resumo do Fotografo
+2. Listar vendas por periodo
+3. Consultar detalhes de uma venda
+4. Consultar top fotos mais vendidas
+5. Consultar saldo disponivel
+6. Consultar Lote com estatisticas
 
 **Regras de negocio:**
-- Metricas consideram apenas licencas confirmadas (nao canceladas)
-- Fotografo com zero vendas ve metricas zeradas (nunca nulas)
-- Top fotos e ordenado por quantidade de licencas, desempate por data mais recente
-- Saldo disponivel = soma de todos os `valorFotografo` dos SplitFinanceiros
+- Metricas consideram apenas licencas confirmadas
+- Fotografo com zero vendas ve metricas zeradas
+- Top fotos e ordenado por quantidade de licencas
+- Saldo disponivel soma os valores do split do fotografo
 
----
+### H05 - Comprar Licenca de Foto com Split Financeiro  *(Marco Maciel)*
 
-### H05 — Comprar Licenca de Foto com Split Financeiro  *(Marco Maciel)*
-
-> Como **Atleta**, quero adquirir licencas de fotos onde apareco, visualizar minhas compras, e cancelar se preciso.
+> Como **Atleta**, quero adquirir licencas de fotos onde apareco, visualizar minhas compras e cancelar se preciso.
 
 **Operacoes:**
-1. **Processar Venda** (cria LicencaDeImagem + SplitFinanceiro atomicamente)
-2. **Listar minhas Licencas** adquiridas
-3. **Consultar recibo** de uma licenca (inclui breakdown do split)
-4. **Cancelar compra** (apenas dentro da janela de 7 dias e sem sincronizacao consumida)
-5. **Reprocessar venda apos falha** (idempotencia por `fotoId + atletaId`)
-6. **Consultar total gasto pelo Atleta**
+1. Processar Venda
+2. Listar minhas Licencas adquiridas
+3. Consultar recibo de uma licenca
+4. Cancelar compra
+5. Reprocessar venda apos falha
+6. Consultar total gasto pelo Atleta
 
 **Regras de negocio:**
-- **RN03:** SplitFinanceiro e criado junto com LicencaDeImagem, atomicamente (70% fotografo / 30% plataforma com `BigDecimal HALF_UP`)
-- Preco padrao e `R$29.90` por licenca
+- SplitFinanceiro e criado junto com LicencaDeImagem de forma atomica
+- Preco padrao da licenca e definido pelo marketplace
 - Compra concorrente da mesma foto: apenas a primeira sucede
-- Compra emite `LicencaAdquiridaEvento` (destravar sincronizacao no Gamification)
-- Cancelamento restaura a foto como disponivel e reverte o SplitFinanceiro
+- Compra emite evento que alimenta a sincronizacao da carta
+- Cancelamento restaura a foto como disponivel
 
----
-
-### H06 — Motor de Sugestao de Fotos  *(Marco Maciel)*
+### H06 - Motor de Sugestao de Fotos  *(Marco Maciel)*
 
 > Como **Atleta**, quero ver fotos sugeridas automaticamente com base nos meus check-ins e gerenciar meus favoritos.
 
 **Operacoes:**
-1. **Solicitar sugestoes** para um Atleta (cruza CheckIns ↔ EXIF das Fotos)
-2. **Filtrar sugestoes por Sessao**
-3. **Filtrar sugestoes por periodo**
-4. **Favoritar foto sugerida**
-5. **Remover dos favoritos**
-6. **Listar favoritos do Atleta**
+1. Solicitar sugestoes para um Atleta
+2. Filtrar sugestoes por Sessao
+3. Filtrar sugestoes por periodo
+4. Favoritar foto sugerida
+5. Remover dos favoritos
+6. Listar favoritos do Atleta
 
 **Regras de negocio:**
-- **RN02:** Foto so aparece nas sugestoes se `exif.timestamp ∈ [checkIn.horario, checkIn.horario + sessao.duracao]`
+- Foto so aparece nas sugestoes se o EXIF estiver dentro do intervalo do check-in
 - Atleta sem CheckIn no periodo nao recebe sugestoes
-- Foto ja adquirida (com LicencaDeImagem do proprio Atleta) nao reaparece nas sugestoes
+- Foto ja adquirida nao reaparece nas sugestoes
 - Favoritos nao afetam ranking nem recomendacoes
 
----
+### H07 - Sincronizar Carta do Atleta (Reveal)  *(Galileu Calaca)*
 
-### H07 — Sincronizar Carta do Atleta (Reveal)  *(Galileu Calaça)*
-
-> Como **Atleta**, quero sincronizar minha CartaOficial para revelar meu progresso, consultar historico de sincronizacoes, e validar pre-requisitos.
+> Como **Atleta**, quero sincronizar minha CartaOficial para revelar meu progresso, consultar historico de sincronizacoes e validar pre-requisitos.
 
 **Operacoes:**
-1. **Verificar elegibilidade para sincronizacao** (RN01)
-2. **Consultar shadow stats acumulados** (XP latente)
-3. **Sincronizar Carta** (transfere XP → atributos, recalcula Overall)
-4. **Consultar historico de sincronizacoes** do Atleta
-5. **Comparar snapshot antes/depois** da ultima sincronizacao
-6. **Reverter ultima sincronizacao** (compensatorio, apenas em caso de erro)
+1. Verificar elegibilidade para sincronizacao
+2. Consultar shadow stats acumulados
+3. Sincronizar Carta
+4. Consultar historico de sincronizacoes
+5. Comparar snapshot antes/depois
+6. Reverter ultima sincronizacao
 
 **Regras de negocio:**
-- **RN01:** Sincronizacao so e permitida se existe `LicencaDeImagem` posterior a `ultimaSincronizacao`
-- XP e distribuido proporcionalmente aos pesos dos AtributoEsportivo
-- Overall e recalculado como media ponderada apos distribuicao
-- StatusPotencial (XP) zera apos sincronizacao bem-sucedida
-- Sincronizacao emite `CartaSincronizadaEvento`
+- Sincronizacao so e permitida se existir licenca posterior a ultima sincronizacao
+- XP e distribuido proporcionalmente aos pesos dos atributos
+- Overall e recalculado apos a distribuicao
+- StatusPotencial zera apos sincronizacao bem-sucedida
+- Sincronizacao emite evento de dominio
 
----
+### H08 - Ranking e Evolucao da Carta  *(Galileu Calaca)*
 
-### H08 — Ranking e Evolucao da Carta  *(Galileu Calaça)*
-
-> Como **Atleta**, quero consultar o ranking, minha posicao, e a evolucao da minha carta ao longo do tempo.
+> Como **Atleta**, quero consultar o ranking, minha posicao e a evolucao da minha carta ao longo do tempo.
 
 **Operacoes:**
-1. **Calcular Overall** de uma carta (media ponderada dos atributos)
-2. **Consultar ranking global** (ordenado por Overall decrescente)
-3. **Consultar ranking por modalidade** (filtra atributos por tipoEsporte)
-4. **Consultar minha posicao** no ranking
-5. **Consultar evolucao da minha carta** (Overall ao longo das sincronizacoes)
-6. **Comparar cartas** de dois atletas
+1. Calcular Overall de uma carta
+2. Consultar ranking global
+3. Consultar ranking por modalidade
+4. Consultar minha posicao no ranking
+5. Consultar evolucao da minha carta
+6. Comparar cartas de dois atletas
 
 **Regras de negocio:**
-- Apenas cartas com `sincronizada = true` entram no ranking
-- `Overall = Soma(atributo.valor × atributo.peso) / Soma(atributo.peso)`
-- Desempate no ranking: Atleta com sincronizacao mais recente primeiro
-- Atleta nao sincronizado consulta seu potencial mas nao aparece no ranking
-- Historico de evolucao guarda snapshot do Overall apos cada sincronizacao
+- Apenas cartas sincronizadas entram no ranking
+- Overall usa media ponderada dos atributos
+- Desempate no ranking usa sincronizacao mais recente
+- Atleta nao sincronizado nao aparece no ranking
+- Historico de evolucao guarda snapshot do Overall
+
+### H09 - Perfil Social  *(Galileu Calaca)*
+
+> Como **Atleta**, quero manter meu perfil social atualizado para me apresentar melhor na rede.
+
+**Operacoes:**
+1. Consultar perfil social
+2. Editar bio e preferencias
+3. Atualizar imagem de perfil
+4. Listar estatisticas sociais basicas
+5. Ver destaques do perfil
+6. Exibir resumo da atividade recente
+
+**Regras de negocio:**
+- Perfil social deve validar dados obrigatorios
+- Imagem de perfil deve ser uma midia valida
+- Alteracoes sao refletidas no feed e nas interacoes
+
+### H10 - Conexoes, Pedidos e Bloqueios  *(Galileu Calaca)*
+
+> Como **Atleta**, quero me conectar com outros atletas, aceitar pedidos e bloquear contatos quando necessario.
+
+**Operacoes:**
+1. Enviar pedido de conexao
+2. Aceitar ou recusar pedido
+3. Remover conexao existente
+4. Bloquear contato
+5. Desbloquear contato
+6. Listar minha rede de conexoes
+
+**Regras de negocio:**
+- Nao pode haver conexao reciproca duplicada
+- Bloqueio impede novas interacoes
+- Pedidos pendentes expiram conforme regra da aplicacao
+
+### H11 - Feed de Atividades e Curtidas  *(Galileu Calaca)*
+
+> Como **Atleta**, quero acompanhar o feed da rede e interagir com atividades de outros atletas.
+
+**Operacoes:**
+1. Listar feed
+2. Publicar atividade no feed
+3. Curtir postagem
+4. Descurtir postagem
+5. Comentar postagem
+6. Filtrar feed por tipo de atividade
+
+**Regras de negocio:**
+- O feed respeita conexoes e regras de visibilidade
+- Uma postagem nao pode ser curtida duas vezes pelo mesmo atleta
+- Interacoes sao auditaveis e podem gerar notificacoes
+
+### H12 - Notificacoes  *(Galileu Calaca)*
+
+> Como **Atleta**, quero receber notificacoes sobre eventos importantes para nao perder atualizacoes da plataforma.
+
+**Operacoes:**
+1. Listar notificacoes
+2. Marcar como lida
+3. Marcar todas como lidas
+4. Excluir notificacao
+5. Filtrar por tipo
+6. Consultar contador de nao lidas
+
+**Regras de negocio:**
+- Notificacoes sao geradas por eventos da plataforma
+- Apenas o dono pode visualizar suas notificacoes
+- Notificacoes lidas nao entram no contador de pendentes
 
 ---
 
@@ -195,24 +248,25 @@ Cada historia abaixo e uma funcionalidade nao trivial com **multiplas operacoes*
 
 | Integrante | Historias |
 |---|---|
-| **Antônio Paes** | H03 (Gerenciar Lote de Fotos) + H04 (Dashboard do Fotografo) |
-| **Galileu Calaça** | H07 (Sincronizar Carta) + H08 (Ranking e Evolucao) |
+| **Antonio Paes** | H03 (Gerenciar Lote de Fotos) + H04 (Dashboard do Fotografo) |
+| **Galileu Calaca** | H07 (Sincronizar Carta) + H08 (Ranking e Evolucao) + H09 (Perfil Social) + H10 (Conexoes) + H11 (Feed) + H12 (Notificacoes) |
 | **Marco Maciel** | H05 (Comprar Licenca com Split) + H06 (Motor de Sugestao) |
-| **João Henrique** | H01 (Gerenciar Sessao de Treino) + H02 (Check-in e Atividade) |
+| **Joao Henrique** | H01 (Gerenciar Sessao de Treino) + H02 (Check-in e Atividade) |
 
 ---
 
 ## Prioridade de Implementacao
 
-**Release 1 (1a Entrega — Dominio puro + BDD):**
-**Escopo:** H01 ate H08 — 8 historias completas com todas as suas operacoes.
-**Objetivo:** Implementar **todas as operacoes** de cada historia no Dominio puro (sem JPA, sem Web). Cobrir cada operacao com cenarios BDD em Cucumber. Validar regras de negocio (RN01, RN02, RN03) como invariantes de dominio.
+**Release 1 (Dominio puro + BDD):**
 
-**Release 2 (2a Entrega — Infraestrutura, Web e Padroes):**
-**Escopo:** Integracao das 8 historias com infraestrutura real.
-**Objetivo:**
-  - Camada de persistencia com JPA isolada em `infraestrutura/` (Mapeadores ModelMapper traduzindo entidades JPA ⇄ entidades de dominio).
-  - Camada Web (Controllers REST) em `apresentacao-backend/`.
-  - 6 Padroes de Design (Iterator no Ranking, Proxy com cache, Decorator de foto, Observer para eventos, Strategy de XP por esporte, Template Method de sincronizacao).
-  - Comunicacao entre microservicos via REST + eventos.
-  - Concorrencia explicita (optimistic locking em Foto).
+- Escopo: H01 a H12
+- Objetivo: implementar as operacoes de cada historia no dominio puro e cobrir os cenarios com Cucumber
+- Foco: regras de negocio, invariantes e validacoes do dominio
+
+**Release 2 (Infraestrutura, Web e Padroes):**
+
+- Persistencia com JPA isolada em infraestrutura
+- Camada Web com controllers REST
+- Padroes de projeto documentados: Iterator, Proxy, Decorator, Observer, Strategy e Template Method
+- Comunicacao entre microservicos via REST e eventos
+- Concorrencia explicita onde necessario

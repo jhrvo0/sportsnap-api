@@ -25,4 +25,9 @@ public class AssinaturaRepositorioEmMemoria implements AssinaturaRepositorio {
             .filter(a -> a.getAtletaId().equals(atletaId) && a.isAtiva())
             .findFirst();
     }
+
+    @Override
+    public void limpar() {
+        dados.clear();
+    }
 }

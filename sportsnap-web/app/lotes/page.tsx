@@ -4,21 +4,32 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import {
-  listarLotes, criarLote, editarLote,
-  arquivarLote, desarquivarLote, excluirLote,
+  arquivarLote,
+  criarLote,
+  desarquivarLote,
+  editarLote,
+  excluirLote,
+  listarLotes,
   type LoteDto,
 } from "@/lib/marketplace";
-import { PageHeader } from "@/components/PageHeader";
-import { Card } from "@/components/Card";
-import { Button } from "@/components/Button";
-import { Input, Select } from "@/components/Input";
 import { Alert } from "@/components/Alert";
 import { Badge } from "@/components/Badge";
+import { Button } from "@/components/Button";
+import { Card } from "@/components/Card";
+import { Input, Select } from "@/components/Input";
+import { PageHeader } from "@/components/PageHeader";
 
-// Spots e sessões vêm do session-service (8083); por ora usamos lista fixa
-// igual ao seed do backend para manter consistência
-const SPOTS_FIXOS = [{ id: 1, nome: "Praia de Maracaipe" }, { id: 2, nome: "Ibirapuera" }, { id: 3, nome: "Rezende" }];
-const SESSOES_FIXAS = [{ id: 1, descricao: "Sessão Manhã" }, { id: 2, descricao: "Sessão Tarde" }, { id: 3, descricao: "Sessão Noite" }];
+const SPOTS_FIXOS = [
+  { id: 1, nome: "Praia de Maracaipe" },
+  { id: 2, nome: "Ibirapuera" },
+  { id: 3, nome: "Rezende" },
+];
+
+const SESSOES_FIXAS = [
+  { id: 1, descricao: "Sessao Manha" },
+  { id: 2, descricao: "Sessao Tarde" },
+  { id: 3, descricao: "Sessao Noite" },
+];
 
 export default function LotesPage() {
   const { sessao, carregando } = useAuth();
@@ -43,27 +54,33 @@ export default function LotesPage() {
     try {
       setLotes(await listarLotes(sessao.id));
     } catch {
-      setErro("Não foi possível carregar os álbuns. O backend está rodando?");
+      setErro("Nao foi possivel carregar os albuns. O backend esta rodando?");
     }
   }
 
-  useEffect(() => { if (sessao) carregar(); }, [sessao]);
+  useEffect(() => {
+    if (sessao) carregar();
+  }, [sessao]);
 
-  async function criar(e: React.FormEvent) {
-    e.preventDefault();
+  async function criar(event: React.FormEvent) {
+    event.preventDefault();
     if (!sessao) return;
     setErro(null);
     try {
       await criarLote({
         fotografoId: sessao.id,
-        sessaoId: parseInt(sessaoId),
-        spotId: parseInt(spotId),
+        sessaoId: parseInt(sessaoId, 10),
+        spotId: parseInt(spotId, 10),
         descricao,
       });
-      setAviso("Álbum criado com sucesso.");
-      setSpotId(""); setSessaoId(""); setDescricao("");
+      setAviso("Album criado com sucesso.");
+      setSpotId("");
+      setSessaoId("");
+      setDescricao("");
       carregar();
-    } catch { setErro("Erro ao criar álbum."); }
+    } catch {
+      setErro("Erro ao criar album.");
+    }
   }
 
   async function salvarEdicao(id: number) {
@@ -72,104 +89,131 @@ export default function LotesPage() {
     try {
       await editarLote(id, novaDescricao.trim());
       setEditandoId(null);
-      setAviso(`Título do álbum #${id} atualizado.`);
+      setAviso(`Titulo do album #${id} atualizado.`);
       carregar();
-    } catch { setErro("Erro ao editar álbum."); }
+    } catch {
+      setErro("Erro ao editar album.");
+    }
   }
 
   async function arquivar(id: number) {
-    try { await arquivarLote(id); setAviso(`Álbum #${id} arquivado.`); carregar(); }
-    catch { setErro("Erro ao arquivar álbum."); }
+    try {
+      await arquivarLote(id);
+      setAviso(`Album #${id} arquivado.`);
+      carregar();
+    } catch {
+      setErro("Erro ao arquivar album.");
+    }
   }
 
   async function desarquivar(id: number) {
-    try { await desarquivarLote(id); setAviso(`Álbum #${id} reativado.`); carregar(); }
-    catch { setErro("Erro ao desarquivar álbum."); }
+    try {
+      await desarquivarLote(id);
+      setAviso(`Album #${id} reativado.`);
+      carregar();
+    } catch {
+      setErro("Erro ao desarquivar album.");
+    }
   }
 
   async function excluir(id: number) {
-    if (!confirm(`Excluir álbum #${id}? Todas as fotos serão removidas.`)) return;
-    try { await excluirLote(id); setAviso(`Álbum #${id} excluído.`); carregar(); }
-    catch { setErro("Erro ao excluir álbum."); }
+    if (!confirm(`Excluir album #${id}? Todas as fotos serao removidas.`)) return;
+    try {
+      await excluirLote(id);
+      setAviso(`Album #${id} excluido.`);
+      carregar();
+    } catch {
+      setErro("Erro ao excluir album.");
+    }
   }
 
   if (!sessao) return null;
 
   return (
     <div className="fade-up">
-      <PageHeader eyebrow="Fotógrafo" title="Gestão de Álbuns" subtitle="Organize suas capturas em álbuns vinculados a eventos reais." />
+      <PageHeader eyebrow="Fotografo" title="Gestao de Albuns" subtitle="Organize suas capturas em albuns vinculados a eventos reais." />
 
       {aviso && <Alert tone="success" className="mb-8">{aviso}</Alert>}
       {erro && <Alert tone="danger" className="mb-8">{erro}</Alert>}
 
       <div className="grid gap-8 lg:grid-cols-[1fr_2fr]">
-        <Card title="Criar Novo Álbum">
+        <Card title="Criar Novo Album">
           <form onSubmit={criar} className="space-y-5">
             <Select label="Local (Spot)" value={spotId} onChange={(e) => setSpotId(e.target.value)} required>
               <option value="">Selecione...</option>
-              {SPOTS_FIXOS.map((s) => <option key={s.id} value={s.id}>{s.nome}</option>)}
+              {SPOTS_FIXOS.map((spot) => (
+                <option key={spot.id} value={spot.id}>{spot.nome}</option>
+              ))}
             </Select>
-            <Select label="Sessão de Treino" value={sessaoId} onChange={(e) => setSessaoId(e.target.value)} required>
+            <Select label="Sessao de Treino" value={sessaoId} onChange={(e) => setSessaoId(e.target.value)} required>
               <option value="">Selecione...</option>
-              {SESSOES_FIXAS.map((s) => <option key={s.id} value={s.id}>{s.descricao}</option>)}
+              {SESSOES_FIXAS.map((item) => (
+                <option key={item.id} value={item.id}>{item.descricao}</option>
+              ))}
             </Select>
-            <Input label="Título do Álbum" value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex: Surf Matinal Stella Maris" required />
-            <Button type="submit" className="w-full" size="lg">Criar Álbum</Button>
+            <Input label="Titulo do Album" value={descricao} onChange={(e) => setDescricao(e.target.value)} placeholder="Ex: Surf Matinal Stella Maris" required />
+            <Button type="submit" className="w-full" size="lg">Criar Album</Button>
           </form>
         </Card>
 
-        <Card title={`Seus Álbuns (${lotes.length})`}>
+        <Card title={`Seus Albuns (${lotes.length})`}>
           {lotes.length === 0 ? (
-            <div className="py-20 text-center bg-ink-50 rounded-[2rem] border border-dashed border-ink-200">
-              <p className="text-sm text-ink-500">Nenhum álbum criado ainda.</p>
+            <div className="rounded-[2rem] border border-dashed border-ink-200 bg-ink-50 py-20 text-center">
+              <p className="text-sm text-ink-500">Nenhum album criado ainda.</p>
             </div>
           ) : (
             <div className="space-y-4">
-              {lotes.map((l) => (
-                <div key={l.id} className="surface p-6 rounded-[2rem] transition-all hover:border-accent/20">
-                  {editandoId === l.id ? (
+              {lotes.map((lote) => (
+                <div key={lote.id} className="surface rounded-[2rem] p-6 transition-all hover:border-accent/20">
+                  {editandoId === lote.id ? (
                     <div className="space-y-3">
-                      <Input label="Novo título" value={novaDescricao} onChange={(e) => setNovaDescricao(e.target.value)} autoFocus />
+                      <Input label="Novo titulo" value={novaDescricao} onChange={(e) => setNovaDescricao(e.target.value)} autoFocus />
                       <div className="flex gap-2">
-                        <Button size="sm" onClick={() => salvarEdicao(l.id)}>Salvar</Button>
+                        <Button size="sm" onClick={() => salvarEdicao(lote.id)}>Salvar</Button>
                         <Button size="sm" variant="ghost" onClick={() => setEditandoId(null)}>Cancelar</Button>
                       </div>
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-5">
-                        <div
-                          onClick={() => router.push(`/lotes/${l.id}`)}
-                          className="h-16 w-16 rounded-2xl bg-ink-900 flex items-center justify-center text-white font-black cursor-pointer hover:bg-accent transition-colors"
-                        >{l.id}</div>
+                        <button
+                          type="button"
+                          onClick={() => router.push(`/lotes/${lote.id}`)}
+                          className="flex h-16 w-16 items-center justify-center rounded-2xl bg-ink-900 font-black text-white transition-colors hover:bg-accent"
+                        >
+                          {lote.id}
+                        </button>
                         <div>
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => router.push(`/lotes/${l.id}`)}
-                              className="font-bold text-ink-900 hover:text-accent transition-colors text-left"
-                            >{l.descricao}</button>
-                            {l.arquivado && <Badge tone="warning">Arquivado</Badge>}
+                              type="button"
+                              onClick={() => router.push(`/lotes/${lote.id}`)}
+                              className="text-left font-bold text-ink-900 transition-colors hover:text-accent"
+                            >
+                              {lote.descricao}
+                            </button>
+                            {lote.arquivado && <Badge tone="warning">Arquivado</Badge>}
                           </div>
                           <p className="mt-1 text-[12px] text-ink-500">
-                            Spot #{l.spotId} · {new Date(l.criadoEm).toLocaleDateString("pt-BR")}
+                            Spot #{lote.spotId} - {new Date(lote.criadoEm).toLocaleDateString("pt-BR")}
                           </p>
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        {!l.arquivado && (
-                          <Button variant="secondary" size="sm" onClick={() => router.push(`/upload?loteId=${l.id}`)}>
+                        {!lote.arquivado && (
+                          <Button variant="secondary" size="sm" onClick={() => router.push(`/upload?loteId=${lote.id}`)}>
                             Subir Fotos
                           </Button>
                         )}
-                        <Button variant="ghost" size="sm" onClick={() => { setEditandoId(l.id); setNovaDescricao(l.descricao); }}>
+                        <Button variant="ghost" size="sm" onClick={() => { setEditandoId(lote.id); setNovaDescricao(lote.descricao); }}>
                           Editar
                         </Button>
-                        {l.arquivado ? (
-                          <Button variant="ghost" size="sm" className="text-emerald-600" onClick={() => desarquivar(l.id)}>Reativar</Button>
+                        {lote.arquivado ? (
+                          <Button variant="ghost" size="sm" className="text-emerald-600" onClick={() => desarquivar(lote.id)}>Reativar</Button>
                         ) : (
-                          <Button variant="ghost" size="sm" className="text-ink-400" onClick={() => arquivar(l.id)}>Arquivar</Button>
+                          <Button variant="ghost" size="sm" className="text-ink-400" onClick={() => arquivar(lote.id)}>Arquivar</Button>
                         )}
-                        <Button variant="ghost" size="sm" className="text-rose-500" onClick={() => excluir(l.id)}>Excluir</Button>
+                        <Button variant="ghost" size="sm" className="text-rose-500" onClick={() => excluir(lote.id)}>Excluir</Button>
                       </div>
                     </div>
                   )}
