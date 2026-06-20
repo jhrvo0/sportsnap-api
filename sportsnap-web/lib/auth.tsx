@@ -2,7 +2,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
-type Role = "atleta" | "fotografo";
+type Role = "atleta" | "fotografo" | "adm";
 
 export type Sessao = {
   role: Role;
