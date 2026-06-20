@@ -1,6 +1,6 @@
 #FileLock
-#Sat Jun 20 11:48:37 BRT 2026
-hostName=BOOK-GQFVHBDKOS
-id=19ee58147e8dcfc2c0da801132674b0b76e04095da2
+#Sat Jun 20 12:13:46 GMT-03:00 2026
+hostName=localhost
+id=19ee595183ede6580cab0c1e378d27aec7b13e12e39
 method=file
-server=192.168.100.18\:49880
+server=localhost\:59329
