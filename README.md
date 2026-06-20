@@ -24,7 +24,7 @@ O repositorio esta organizado em 3 microservicos seguindo Clean Architecture e D
 - `Joao Henrique`: H01 - Gerenciar Sessao de Treino, H02 - Check-in e Registro de Atividade, H03 - Registro Real de Atividades
 - `Antonio Paes`: H03 - Gerenciar Lote de Fotos, H04 - Dashboard do Fotografo
 - `Marco Maciel`: H05 - Comprar Licenca de Foto com Split Financeiro, H06 - Motor de Sugestao de Fotos
-- `Galileu Calaca`: H07 - Sincronizar Carta do Atleta, H08 - Ranking e Evolucao da Carta, H09 - Perfil Social e Rede de Conexoes, H10 - Conexoes, Pedidos e Bloqueios, H11 - Feed de Atividades e Curtidas, H12 - Notificacoes
+- `Galileu Calaca`: H09 - Perfil Social, Rede de Conexoes e Mensagens Diretas, H10 - Feed de Atividades, Posts Esportivos e Notificacoes
 
 ## Historias BDD
 
@@ -45,6 +45,7 @@ O projeto possui 13 features BDD principais, porque o numero `H03` aparece em do
 | Social | `h10-conexoes.feature` | H10 - Conexoes, Pedidos e Bloqueios |
 | Social | `h11-feed.feature` | H11 - Feed de Atividades e Curtidas |
 | Social | `h12-notificacoes.feature` | H12 - Notificacoes |
+| Social | `h13-mensagens.feature` | H13 - Mensagens Diretas entre Usuarios |
 
 ## Ordem de apresentacao sugerida
 
@@ -86,9 +87,7 @@ npm run dev
 | --- | --- | --- |
 | `Observer` | `Joao Henrique` | `sportsnap-session-service/src/main/java/com/sportsnap/session/dominio/evento/EventoBarramento.java`, `sportsnap-session-service/src/main/java/com/sportsnap/session/infraestrutura/evento/EventoBarramentoSpring.java`, `sportsnap-session-service/src/main/java/com/sportsnap/session/dominio/checkin/CheckInServico.java`, `sportsnap-session-service/src/main/java/com/sportsnap/session/dominio/atividade/AtividadeServico.java` |
 | `Decorator` | `Antonio Paes` | `sportsnap-marketplace-service/src/main/java/com/sportsnap/marketplace/dominio/foto/FotoDecorador.java`, `sportsnap-marketplace-service/src/main/java/com/sportsnap/marketplace/dominio/foto/FotoComMarcaDagua.java`, `sportsnap-marketplace-service/src/main/java/com/sportsnap/marketplace/dominio/foto/FotoPreviewBasico.java` |
-| `Strategy` | `Marco Maciel` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/xp/CalculoXpEstrategia.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/xp/EstrategiaXpCorrida.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/xp/EstrategiaXpMusculacao.java` |
-| `Iterator` | `Galileu Calaca` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/ranking/RankingIterador.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/ranking/RankingServico.java` |
-| `Proxy` | `Galileu Calaca` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/ranking/RankingProxi.java` |
-| `Template Method` | `Galileu Calaca` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/sincronizacao/TemplateSincronizacao.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/sincronizacao/SincronizacaoPadrao.java` |
+| `Strategy` | `Galileu Calaca` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/conexao/ConexaoServico.java` (algoritmo de sugestao por score ponderado: seguidores em comum x esporte x localidade) |
+| `Observer` | `Galileu Calaca` | `sportsnap-social-service/src/main/java/com/sportsnap/gamification/dominio/evento/EventoBarramento.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/infraestrutura/evento/EventoBarramentoSpring.java`, `sportsnap-social-service/src/main/java/com/sportsnap/gamification/infraestrutura/evento/SocialEventoListener.java` |
 
 Os padroes aparecem de forma distribuida entre os modulos e sustentam as regras de negocio, a extensibilidade e o desacoplamento entre dominio, infraestrutura e apresentacao.

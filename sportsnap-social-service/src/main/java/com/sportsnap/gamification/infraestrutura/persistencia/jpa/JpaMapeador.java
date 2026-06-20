@@ -22,6 +22,8 @@ import com.sportsnap.gamification.dominio.conexao.StatusPedido;
 import com.sportsnap.gamification.dominio.comentario.Comentario;
 import com.sportsnap.gamification.dominio.comentario.ComentarioId;
 import com.sportsnap.gamification.dominio.feed.Curtida;
+import com.sportsnap.gamification.dominio.mensagem.Mensagem;
+import com.sportsnap.gamification.dominio.mensagem.MensagemId;
 import com.sportsnap.gamification.dominio.feed.CurtidaId;
 import com.sportsnap.gamification.dominio.feed.ItemFeed;
 import com.sportsnap.gamification.dominio.feed.ItemFeedId;
@@ -273,15 +275,13 @@ class JpaMapeador {
 
     // --- Mensagem ---
 
-    com.sportsnap.gamification.dominio.mensagem.Mensagem paraDominio(MensagemJpa jpa) {
-        return new com.sportsnap.gamification.dominio.mensagem.Mensagem(
-            new com.sportsnap.gamification.dominio.mensagem.MensagemId(jpa.id),
-            new com.sportsnap.gamification.dominio.perfil.PerfilId(jpa.remetenteId),
-            new com.sportsnap.gamification.dominio.perfil.PerfilId(jpa.destinatarioId),
+    Mensagem paraDominio(MensagemJpa jpa) {
+        return new Mensagem(new MensagemId(jpa.id),
+            new PerfilId(jpa.remetenteId), new PerfilId(jpa.destinatarioId),
             jpa.conteudo, jpa.lida, jpa.criadaEm);
     }
 
-    MensagemJpa paraJpa(com.sportsnap.gamification.dominio.mensagem.Mensagem dominio) {
+    MensagemJpa paraJpa(Mensagem dominio) {
         var jpa = new MensagemJpa();
         if (dominio.getId() != null) jpa.id = dominio.getId().getId();
         jpa.remetenteId    = dominio.getRemetenteId().getId();
