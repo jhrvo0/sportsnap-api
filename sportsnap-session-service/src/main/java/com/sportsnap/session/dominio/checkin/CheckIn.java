@@ -17,6 +17,7 @@ public class CheckIn {
     private final Coordenada coordenada;
     private boolean cancelado;
     private boolean atividadeRegistrada;
+    private LocalDateTime checkoutHorario;
 
     public CheckIn(AtletaId atletaId, SessaoId sessaoId, LocalDateTime horario, Coordenada coordenada) {
         id = null;
@@ -30,10 +31,17 @@ public class CheckIn {
         this.coordenada = coordenada;
         this.cancelado = false;
         this.atividadeRegistrada = false;
+        this.checkoutHorario = null;
     }
 
     public CheckIn(CheckInId id, AtletaId atletaId, SessaoId sessaoId, LocalDateTime horario,
                    Coordenada coordenada, boolean cancelado, boolean atividadeRegistrada) {
+        this(id, atletaId, sessaoId, horario, coordenada, cancelado, atividadeRegistrada, null);
+    }
+
+    public CheckIn(CheckInId id, AtletaId atletaId, SessaoId sessaoId, LocalDateTime horario,
+                   Coordenada coordenada, boolean cancelado, boolean atividadeRegistrada,
+                   LocalDateTime checkoutHorario) {
         notNull(id, "O id do CheckIn nao pode ser nulo");
         notNull(atletaId, "O id do Atleta nao pode ser nulo");
         notNull(sessaoId, "O id da Sessao nao pode ser nulo");
@@ -46,6 +54,7 @@ public class CheckIn {
         this.coordenada = coordenada;
         this.cancelado = cancelado;
         this.atividadeRegistrada = atividadeRegistrada;
+        this.checkoutHorario = checkoutHorario;
     }
 
     public CheckInId getId() {
@@ -76,6 +85,14 @@ public class CheckIn {
         return atividadeRegistrada;
     }
 
+    public LocalDateTime getCheckoutHorario() {
+        return checkoutHorario;
+    }
+
+    public boolean temCheckout() {
+        return checkoutHorario != null;
+    }
+
     public CheckInCanceladoEvento cancelar() {
         if (cancelado) {
             throw new IllegalStateException("O CheckIn ja esta cancelado");
@@ -91,7 +108,21 @@ public class CheckIn {
         if (cancelado) {
             throw new IllegalStateException("Nao e possivel registrar atividade em CheckIn cancelado");
         }
+        if (checkoutHorario != null) {
+            throw new IllegalStateException("Nao e possivel registrar atividade apos checkout");
+        }
         this.atividadeRegistrada = true;
+    }
+
+    public void realizarCheckout(LocalDateTime horarioCheckout) {
+        notNull(horarioCheckout, "O horario do checkout nao pode ser nulo");
+        if (cancelado) {
+            throw new IllegalStateException("Nao e possivel fazer checkout de CheckIn cancelado");
+        }
+        if (checkoutHorario != null) {
+            throw new IllegalStateException("CheckIn ja possui checkout");
+        }
+        this.checkoutHorario = horarioCheckout;
     }
 
     public static class CheckInEvento {

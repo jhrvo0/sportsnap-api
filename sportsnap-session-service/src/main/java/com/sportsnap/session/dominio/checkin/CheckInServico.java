@@ -80,6 +80,21 @@ public class CheckInServico {
         barramento.postar(evento);
     }
 
+    public CheckIn checkout(CheckInId id) {
+        var checkIn = obter(id);
+        var sessao = sessaoRepositorio.obter(checkIn.getSessaoId())
+            .orElseThrow(() -> new IllegalArgumentException("Sessao nao encontrada: " + checkIn.getSessaoId()));
+        var agora = LocalDateTime.now();
+        if (sessao.isCancelada()) {
+            throw new IllegalStateException("Sessao cancelada");
+        }
+        if (sessao.getPeriodo().terminou(agora)) {
+            throw new IllegalStateException("Sessao encerrada para checkout");
+        }
+        checkIn.realizarCheckout(agora);
+        return repositorio.salvar(checkIn);
+    }
+
     public List<AtletaId> listarAtletasComCheckIn(SessaoId sessaoId) {
         notNull(sessaoId, "O id da Sessao nao pode ser nulo");
 

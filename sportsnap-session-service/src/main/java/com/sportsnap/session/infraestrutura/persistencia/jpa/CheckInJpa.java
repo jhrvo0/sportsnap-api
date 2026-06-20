@@ -1,26 +1,22 @@
 package com.sportsnap.session.infraestrutura.persistencia.jpa;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-
+import com.sportsnap.session.dominio.atleta.AtletaId;
+import com.sportsnap.session.dominio.checkin.CheckIn;
+import com.sportsnap.session.dominio.checkin.CheckInId;
+import com.sportsnap.session.dominio.checkin.CheckInRepositorio;
+import com.sportsnap.session.dominio.sessao.SessaoId;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.transaction.Transactional;
-
+import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-
-import com.sportsnap.session.dominio.atleta.AtletaId;
-import com.sportsnap.session.dominio.checkin.CheckIn;
-import com.sportsnap.session.dominio.checkin.CheckInId;
-import com.sportsnap.session.dominio.checkin.CheckInRepositorio;
-import com.sportsnap.session.dominio.sessao.SessaoId;
-import com.sportsnap.session.dominio.spot.Coordenada;
 
 @Entity
 @Table(name = "CHECK_IN")
@@ -31,6 +27,7 @@ class CheckInJpa {
     int atletaId;
     int sessaoId;
     LocalDateTime horario;
+    LocalDateTime checkoutHorario;
     double latitude;
     double longitude;
     boolean cancelado;
@@ -39,7 +36,9 @@ class CheckInJpa {
 
 interface CheckInJpaRepository extends JpaRepository<CheckInJpa, Integer> {
     List<CheckInJpa> findByAtletaId(int atletaId);
+
     List<CheckInJpa> findBySessaoId(int sessaoId);
+
     Optional<CheckInJpa> findByAtletaIdAndSessaoId(int atletaId, int sessaoId);
 }
 

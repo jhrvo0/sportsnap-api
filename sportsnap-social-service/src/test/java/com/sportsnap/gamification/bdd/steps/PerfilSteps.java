@@ -46,6 +46,7 @@ public class PerfilSteps {
     }
 
     @Dado("que o Usuario {int} ja possui Perfil publico {string} com esporte {string}")
+    @Dado("o Usuario {int} ja possui Perfil publico {string} com esporte {string}")
     public void usuarioPossuiPerfilComEsporte(Integer usuarioId, String nome, String esporte) {
         var p = perfilServico.criar(new AtletaId(usuarioId), nome, TipoConta.ATLETA);
         perfilServico.editar(p.getId(), new AtletaId(usuarioId), nome, null, esporte, null, Visibilidade.PUBLICA, null);

@@ -1,80 +1,39 @@
 package com.sportsnap.session.bdd.steps;
 
-import com.sportsnap.session.dominio.atividade.AtividadeServico;
-import com.sportsnap.session.dominio.atividade.RegistroAtividade;
-import com.sportsnap.session.dominio.atividade.RegistroAtividadeId;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import com.sportsnap.session.dominio.atividade.AnaliseAtividadeServico;
 import com.sportsnap.session.dominio.atividade.AnaliseEvolucao;
+import com.sportsnap.session.dominio.atividade.AtividadeServico;
+import com.sportsnap.session.dominio.atividade.RegistroAtividade;
 import com.sportsnap.session.dominio.atleta.AtletaId;
-import com.sportsnap.session.dominio.spot.SpotServico;
-import com.sportsnap.session.dominio.spot.Coordenada;
-import com.sportsnap.session.dominio.sessao.SessaoServico;
-import com.sportsnap.session.dominio.sessao.Periodo;
-import com.sportsnap.session.dominio.checkin.CheckInServico;
-import com.sportsnap.session.dominio.checkin.CheckInId;
 import io.cucumber.java.pt.Dado;
+import io.cucumber.java.pt.E;
 import io.cucumber.java.pt.Entao;
 import io.cucumber.java.pt.Quando;
-import io.cucumber.java.pt.E;
-import org.springframework.beans.factory.annotation.Autowired;
-
 import java.time.LocalDateTime;
 import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.*;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class RegistroRealAtividadeSteps {
 
     @Autowired private AtividadeServico atividadeServico;
     @Autowired private AnaliseAtividadeServico analiseAtividadeServico;
     @Autowired private ColetorDeEventos coletorDeEventos;
-    @Autowired private SpotServico spotServico;
-    @Autowired private SessaoServico sessaoServico;
-    @Autowired private CheckInServico checkInServico;
 
     private RegistroAtividade registro;
     private Exception excecao;
     private List<RegistroAtividade> listaConsultada;
     private AnaliseEvolucao analise;
 
-    private CheckInId obterOuCriarCheckInParaAtleta(AtletaId atletaId, LocalDateTime data) {
-        var checkins = checkInServico.listarPorAtleta(atletaId);
-        if (!checkins.isEmpty()) {
-            return checkins.get(0).getId();
-        }
-        
-        var spot = spotServico.listarTodos().stream().findFirst().orElseGet(() -> 
-            spotServico.cadastrar("Spot de Teste BDD", new Coordenada(-8.0, -34.0), "Descricao")
-        );
-        
-        var agora = LocalDateTime.now();
-        var sessao = sessaoServico.listarAtivas().stream().findFirst().orElseGet(() -> 
-            sessaoServico.cadastrar(spot.getId(), new Periodo(agora.minusHours(5), agora.plusHours(5)), "Sessao de Teste BDD")
-        );
-        
-        var checkinObj = checkInServico.realizar(atletaId, sessao.getId(), spot.getCoordenada());
-        return checkinObj.getId();
-    }
-
     @Quando("o Atleta {int} registra manualmente um treino de {string} em {string} com distancia {string} e duracao {int}")
     public void atletaRegistraTreinoManualComData(Integer atletaId, String esporte, String dataStr, String distancia, Integer duracao) {
         try {
-            LocalDateTime data = LocalDateTime.parse(dataStr);
-            var checkInId = obterOuCriarCheckInParaAtleta(new AtletaId(atletaId), data);
-            registro = atividadeServico.registrarComCheckIn(
-                new AtletaId(atletaId),
-                checkInId,
-                esporte,
-                data,
-                Double.parseDouble(distancia),
-                duracao.longValue(),
-                null,
-                0.0,
-                5,
-                "Treino de teste BDD",
-                "CHECKIN",
-                null
-            );
+            registro = registrarManual(atletaId, esporte, LocalDateTime.parse(dataStr), distancia, duracao);
             excecao = null;
         } catch (Exception e) {
             excecao = e;
@@ -84,22 +43,7 @@ public class RegistroRealAtividadeSteps {
     @Quando("o Atleta {int} registra manualmente um treino de {string} com distancia {string} e duracao {int}")
     public void atletaRegistraTreinoManual(Integer atletaId, String esporte, String distancia, Integer duracao) {
         try {
-            var data = LocalDateTime.now();
-            var checkInId = obterOuCriarCheckInParaAtleta(new AtletaId(atletaId), data);
-            registro = atividadeServico.registrarComCheckIn(
-                new AtletaId(atletaId),
-                checkInId,
-                esporte,
-                data,
-                Double.parseDouble(distancia),
-                duracao.longValue(),
-                null,
-                0.0,
-                5,
-                "Treino de teste",
-                "CHECKIN",
-                null
-            );
+            registro = registrarManual(atletaId, esporte, LocalDateTime.now(), distancia, duracao);
             excecao = null;
         } catch (Exception e) {
             excecao = e;
@@ -108,63 +52,18 @@ public class RegistroRealAtividadeSteps {
 
     @Dado("(que )o Atleta {int} registrou manualmente um treino de {string} com distancia {string} e duracao {int}")
     public void dadoAtletaRegistrouTreinoManual(Integer atletaId, String esporte, String distancia, Integer duracao) {
-        var data = LocalDateTime.now();
-        var checkInId = obterOuCriarCheckInParaAtleta(new AtletaId(atletaId), data);
-        atividadeServico.registrarComCheckIn(
-            new AtletaId(atletaId),
-            checkInId,
-            esporte,
-            data,
-            Double.parseDouble(distancia),
-            duracao.longValue(),
-            null,
-            0.0,
-            5,
-            "Treino de teste",
-            "CHECKIN",
-            null
-        );
+        registrarManual(atletaId, esporte, LocalDateTime.now(), distancia, duracao);
     }
 
     @Dado("(que )o Atleta {int} registrou manualmente um treino de {string} em {string} com distancia {string} e duracao {int}")
     public void dadoAtletaRegistrouTreinoManualComData(Integer atletaId, String esporte, String dataStr, String distancia, Integer duracao) {
-        LocalDateTime data = LocalDateTime.parse(dataStr);
-        var checkInId = obterOuCriarCheckInParaAtleta(new AtletaId(atletaId), data);
-        atividadeServico.registrarComCheckIn(
-            new AtletaId(atletaId),
-            checkInId,
-            esporte,
-            data,
-            Double.parseDouble(distancia),
-            duracao.longValue(),
-            null,
-            0.0,
-            5,
-            "Treino de teste",
-            "CHECKIN",
-            null
-        );
+        registrarManual(atletaId, esporte, LocalDateTime.parse(dataStr), distancia, duracao);
     }
 
     @Quando("o Atleta {int} tenta registrar manualmente um treino de {string} com distancia {string} e duracao {int}")
     public void atletaTentaRegistrarTreinoManual(Integer atletaId, String esporte, String distancia, Integer duracao) {
         try {
-            var data = LocalDateTime.now();
-            var checkInId = obterOuCriarCheckInParaAtleta(new AtletaId(atletaId), data);
-            registro = atividadeServico.registrarComCheckIn(
-                new AtletaId(atletaId),
-                checkInId,
-                esporte,
-                data,
-                Double.parseDouble(distancia),
-                duracao.longValue(),
-                null,
-                0.0,
-                5,
-                "Treino de teste",
-                "CHECKIN",
-                null
-            );
+            registro = registrarManual(atletaId, esporte, LocalDateTime.now(), distancia, duracao);
             excecao = null;
         } catch (Exception e) {
             excecao = e;
@@ -176,6 +75,8 @@ public class RegistroRealAtividadeSteps {
         assertNull(excecao, () -> "Nao deveria falhar: " + excecao);
         assertNotNull(registro);
         assertNotNull(registro.getId());
+        assertNull(registro.getCheckInId());
+        assertEquals("MANUAL", registro.getOrigemRegistro());
     }
 
     @E("o ritmo medio calculado e {string} min\\/km")
@@ -215,9 +116,12 @@ public class RegistroRealAtividadeSteps {
 
     @Quando("solicito a lista de atividades do Atleta {int} de {string} no periodo de {string} a {string}")
     public void solicitoListaAtividadesFiltradaPeriodo(Integer atletaId, String esporte, String inicioStr, String fimStr) {
-        LocalDateTime inicio = LocalDateTime.parse(inicioStr);
-        LocalDateTime fim = LocalDateTime.parse(fimStr);
-        listaConsultada = atividadeServico.listarPorAtletaEsporteEPeriodo(new AtletaId(atletaId), esporte, inicio, fim);
+        listaConsultada = atividadeServico.listarPorAtletaEsporteEPeriodo(
+            new AtletaId(atletaId),
+            esporte,
+            LocalDateTime.parse(inicioStr),
+            LocalDateTime.parse(fimStr)
+        );
     }
 
     @Entao("recebo {int} atividade(s) no historico")
@@ -283,8 +187,6 @@ public class RegistroRealAtividadeSteps {
     @Entao("a analise real e gerada com sucesso sem conter calculo de XP")
     public void analiseRealSemXP() {
         assertNotNull(analise);
-        // A analise nao tem propriedade de XP no dominio real
-        assertTrue(true);
     }
 
     @Entao("nenhum evento de XP ou ranking e disparado para o sistema de gamificacao")
@@ -293,5 +195,19 @@ public class RegistroRealAtividadeSteps {
             .filter(e -> e.toString().toLowerCase().contains("xp") || e.toString().toLowerCase().contains("ranking"))
             .toList();
         assertTrue(eventosXP.isEmpty());
+    }
+
+    private RegistroAtividade registrarManual(Integer atletaId, String esporte, LocalDateTime data,
+                                              String distancia, Integer duracao) {
+        return atividadeServico.registrarManual(
+            new AtletaId(atletaId),
+            esporte,
+            data,
+            Double.parseDouble(distancia),
+            duracao.longValue(),
+            5,
+            "Treino de teste",
+            null
+        );
     }
 }

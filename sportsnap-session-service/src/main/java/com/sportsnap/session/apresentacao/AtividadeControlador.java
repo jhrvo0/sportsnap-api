@@ -5,7 +5,9 @@ import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.sportsnap.session.dominio.atividade.AtividadeServico;
 import com.sportsnap.session.dominio.atividade.RegistroAtividade;
@@ -27,14 +29,18 @@ public class AtividadeControlador {
     @PostMapping
     public RegistroAtividadeDto registrar(@RequestBody RegistroAtividadeDto dto) {
         if (dto.checkInId == null) {
-            throw new IllegalArgumentException("O check-in/spot associado nao pode ser nulo");
+            throw new ResponseStatusException(
+                HttpStatus.BAD_REQUEST,
+                "Atividades devem estar vinculadas a um check-in de sessao"
+            );
         }
+        var data = dto.data != null ? dto.data : LocalDateTime.now();
         var intensidade = dto.intensidade != null ? Intensidade.apartirDeTexto(dto.intensidade) : null;
         var salvo = atividadeServico.registrarComCheckIn(
             new AtletaId(dto.atletaId),
             new CheckInId(dto.checkInId),
             dto.esporte,
-            dto.data != null ? dto.data : LocalDateTime.now(),
+            data,
             dto.distancia,
             dto.duracaoSegundos,
             intensidade,

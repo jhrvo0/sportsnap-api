@@ -51,7 +51,7 @@ export type SugestaoConexao = {
 export type ItemFeed = {
   id: { id: number };
   autorId: { id: number };
-  tipo: "FOTO" | "NOVA_CONEXAO";
+  tipo: "FOTO" | "NOVA_CONEXAO" | "POST_ESPORTIVO" | "LICENCA_ADQUIRIDA";
   referenciaId: number;
   publicadoEm: string;
 };

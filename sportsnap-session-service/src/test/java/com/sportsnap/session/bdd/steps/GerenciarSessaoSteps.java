@@ -76,7 +76,7 @@ public class GerenciarSessaoSteps {
     @Quando("cadastro uma Sessao neste Spot com duracao de {int} horas")
     public void cadastroSessaoComDuracao(Integer horas) {
         LocalDateTime agora = LocalDateTime.now();
-        var periodo = new Periodo(agora.minusMinutes(1), agora.plusHours(horas));
+        var periodo = new Periodo(agora, agora.plusHours(horas));
         sessao = sessaoServico.cadastrar(spot.getId(), periodo, "Sessao de teste");
     }
 
@@ -113,7 +113,7 @@ public class GerenciarSessaoSteps {
     public void spotTemSessoes(Integer quantidade) {
         LocalDateTime agora = LocalDateTime.now();
         for (int i = 0; i < quantidade; i++) {
-            var periodo = new Periodo(agora.plusMinutes(i), agora.plusHours(2));
+            var periodo = new Periodo(agora.plusMinutes(i + 1), agora.plusHours(2));
             sessaoServico.cadastrar(spot.getId(), periodo, "Sessao " + i);
         }
     }

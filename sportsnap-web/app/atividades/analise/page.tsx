@@ -407,7 +407,7 @@ export default function AnaliseAtividadesPage() {
   const [metricaChart2, setMetricaChart2] = useState<string>("");
   const [metricasDisponiveis, setMetricasDisponiveis] = useState<{ id: string; label: string; unit: string }[]>([]);
 
-  const [analise, setAnalise] = useState<AnaliseEvolucaoDto | null>(null);
+  const [analise, setAnalise] = useState<(AnaliseEvolucaoDto & { velocidadeMediaGeral?: number; melhorVelocidade?: number }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -487,18 +487,78 @@ export default function AnaliseAtividadesPage() {
         const aData = new Date(aDataRaw);
         if (isNaN(aData.getTime())) return false;
 
-        return aData >= limiteInicio && aData <= agora;
+        return aData >= limiteInicio;
       });
 
       const normalized = filtered.map((a) => {
         const duracaoMin = a.duracao !== undefined ? a.duracao : a.duracaoSegundos ? a.duracaoSegundos / 60 : 0;
         const dataIso =
           a.data || (a.checkInId ? db.find("checkins", (c) => c.id === a.checkInId)?.horario : null) || new Date().toISOString();
-        const dist = a.distancia !== undefined ? Number(a.distancia) : a.metricas?.distancia || 0;
+        
+        let dist = a.distancia !== undefined ? Number(a.distancia) : a.metricas?.distancia || 0;
+        
+        let customArray: any[] = [];
+        if (a.metricas) {
+          if (Array.isArray(a.metricas.custom)) {
+            customArray = a.metricas.custom;
+          } else if (typeof a.metricas === "string") {
+            try {
+              customArray = JSON.parse(a.metricas);
+            } catch {}
+          } else if (typeof a.metricas.custom === "string") {
+            try {
+              customArray = JSON.parse(a.metricas.custom);
+            } catch {}
+          }
+        }
+
+        // CORREÇÃO RETROATIVA DE DISTÂNCIA
+        if (dist === 0 && Array.isArray(customArray)) {
+          const match = customArray.find((m: any) => 
+            m.label?.toLowerCase().includes("distân") || 
+            m.label?.toLowerCase().includes("distan")
+          );
+          if (match) dist = Number(match.value);
+        }
+
+        // CONVERSÃO DE METROS PARA KM PARA NATAÇÃO
+        const esporteNormalizado = (a.esporte || a.sport || "").toUpperCase();
+        if (esporteNormalizado === "NATACAO" && dist > 50) {
+          dist = dist / 1000;
+        }
+
+        // EXTRAÇÃO DE VELOCIDADE E PACE
+        let velocidadeMedia = 0;
+        let velocidadeMax = 0;
+        let pace = 0;
+        if (Array.isArray(customArray)) {
+          const matchSpeed = customArray.find((m: any) => 
+            m.label?.toLowerCase().includes("velocidade média") || 
+            m.label?.toLowerCase().includes("velocidade media")
+          );
+          if (matchSpeed) velocidadeMedia = Number(matchSpeed.value);
+          
+          const matchMax = customArray.find((m: any) => 
+            m.label?.toLowerCase().includes("velocidade máxima") || 
+            m.label?.toLowerCase().includes("velocidade maxima") ||
+            m.label?.toLowerCase().includes("vel. máx") ||
+            m.label?.toLowerCase().includes("vel. max")
+          );
+          if (matchMax) velocidadeMax = Number(matchMax.value);
+
+          const matchPace = customArray.find((m: any) => 
+            m.label?.toLowerCase().includes("pace")
+          );
+          if (matchPace) pace = Number(matchPace.value);
+        }
+        if (velocidadeMax === 0) {
+          velocidadeMax = velocidadeMedia;
+        }
+
         return {
           id: a.id,
           checkInId: a.checkInId,
-          esporte: (a.esporte || a.sport || "").toUpperCase(),
+          esporte: esporteNormalizado,
           data: dataIso,
           distancia: dist,
           duracao: duracaoMin,
@@ -507,6 +567,9 @@ export default function AnaliseAtividadesPage() {
           xpGanho: a.xpGanho !== undefined ? a.xpGanho : a.xpCalculado || 0,
           metricas: a.metricas,
           origemRegistro: a.origemRegistro || (a.checkInId ? "CHECKIN" : "MANUAL"),
+          velocidadeMedia,
+          velocidadeMax,
+          pace,
         };
       });
 
@@ -520,8 +583,13 @@ export default function AnaliseAtividadesPage() {
       const distanciaTotal = normalized.reduce((acc, a) => acc + a.distancia, 0);
       const tempoTotalSegundos = normalized.reduce((acc, a) => acc + a.duracao * 60, 0);
 
+      // Prioriza pace registrado nas métricas customizadas de Corrida
+      const pacesRegistrados = normalized.map(a => a.pace).filter((p): p is number => p !== undefined && p > 0);
+
       let ritmoMedioGeral = 0;
-      if (distanciaTotal > 0) {
+      if (pacesRegistrados.length > 0) {
+        ritmoMedioGeral = pacesRegistrados.reduce((acc, p) => acc + p, 0) / pacesRegistrados.length;
+      } else if (distanciaTotal > 0) {
         ritmoMedioGeral = tempoTotalSegundos / 60 / distanciaTotal;
       }
 
@@ -532,8 +600,10 @@ export default function AnaliseAtividadesPage() {
         return null;
       };
 
-      const paces = normalized.map(getPace).filter((p): p is number => p !== null && p > 0);
-      const melhorRitmo = paces.length > 0 ? Math.min(...paces) : 0;
+      const pacesCalculados = normalized.map(getPace).filter((p): p is number => p !== null && p > 0);
+      const melhorRitmo = pacesRegistrados.length > 0
+        ? Math.min(...pacesRegistrados)
+        : (pacesCalculados.length > 0 ? Math.min(...pacesCalculados) : 0);
 
       const distances = normalized.map((a) => a.distancia);
       const maiorDistancia = distances.length > 0 ? Math.max(...distances) : 0;
@@ -604,6 +674,16 @@ export default function AnaliseAtividadesPage() {
           origemRegistro: a.origemRegistro,
         };
       });
+      // CALCULA VELOCIDADE REAL PARA BICICLETA
+      const velocidadesMedias = normalized.map(a => a.velocidadeMedia).filter((v): v is number => v !== undefined && v > 0);
+      const velocidadeMediaGeral = velocidadesMedias.length > 0
+        ? velocidadesMedias.reduce((acc, v) => acc + v, 0) / velocidadesMedias.length
+        : 0;
+
+      const velocidadesMax = normalized.map(a => a.velocidadeMax).filter((v): v is number => v !== undefined && v > 0);
+      const melhorVelocidade = velocidadesMax.length > 0
+        ? Math.max(...velocidadesMax)
+        : 0;
 
       setAnalise({
         totalAtividades,
@@ -616,6 +696,8 @@ export default function AnaliseAtividadesPage() {
         evolucaoDistancia,
         evolucaoRitmo,
         ultimosTreinos,
+        velocidadeMediaGeral,
+        melhorVelocidade,
       });
     } catch (err) {
       console.error("Falha ao calcular dados offline:", err);
@@ -744,14 +826,20 @@ export default function AnaliseAtividadesPage() {
             
             if (isBicicleta) {
               const tempoHoras = analise.tempoTotalSegundos / 3600;
-              const velMediaGeral = tempoHoras > 0 ? analise.distanciaTotal / tempoHoras : 0;
-              ritmoMedioValue = `${velMediaGeral.toFixed(1)} km/h`;
+              const velMediaVal = (analise.velocidadeMediaGeral && analise.velocidadeMediaGeral > 0)
+                ? analise.velocidadeMediaGeral 
+                : (tempoHoras > 0 ? analise.distanciaTotal / tempoHoras : 0);
+              
+              ritmoMedioValue = `${velMediaVal.toFixed(1)} km/h`;
               ritmoMedioLabel = "Velocidade Média";
               ritmoMedioHint = "Velocidade geral";
               ritmoMedioIcon = "🚀";
               
-              const velMax = analise.melhorRitmo > 0 ? 60 / analise.melhorRitmo : 0;
-              melhorRitmoValue = velMax > 0 ? `${velMax.toFixed(1)} km/h` : "—";
+              const velMaxVal = (analise.melhorVelocidade && analise.melhorVelocidade > 0)
+                ? analise.melhorVelocidade 
+                : (analise.melhorRitmo > 0 ? 60 / analise.melhorRitmo : 0);
+                
+              melhorRitmoValue = velMaxVal > 0 ? `${velMaxVal.toFixed(1)} km/h` : "—";
               melhorRitmoLabel = "Melhor Velocidade";
               melhorRitmoHint = "Recorde de velocidade";
             }
@@ -761,12 +849,12 @@ export default function AnaliseAtividadesPage() {
                 <SectionHeading
                   title="Resumo do período"
                   description={`Métricas consolidadas de ${esporteSelecionadoLabel} · ${periodoLabel}`}
-                  badge={{ tone: "accent", label: `${analise.totalAtividades} treinos` }}
+                  badge={{ tone: "accent", label: `${analise.totalAtividades || 0} treinos` }}
                 />
                 <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                  <StatCard label="Treinos" value={`${analise.totalAtividades}`} hint="Sessões totais" icon="🏋️" />
-                  <StatCard label="Distância" value={analise.distanciaTotal.toFixed(1)} unit="km" hint="Distância total" icon={isBicicleta ? "🚴" : "🏃"} />
-                  <StatCard label="Duração" value={formatarDuracao(analise.tempoTotalSegundos)} hint="Tempo total" icon="⏱️" />
+                  <StatCard label="Treinos" value={`${analise.totalAtividades || 0}`} hint="Sessões totais" icon="🏋️" />
+                  <StatCard label="Distância" value={(analise.distanciaTotal || 0).toFixed(1)} unit="km" hint="Distância total" icon={isBicicleta ? "🚴" : "🏃"} />
+                  <StatCard label="Duração" value={formatarDuracao(analise.tempoTotalSegundos || 0)} hint="Tempo total" icon="⏱️" />
                   <StatCard label={ritmoMedioLabel} value={ritmoMedioValue} hint={ritmoMedioHint} icon={ritmoMedioIcon} />
                   <StatCard
                     label={melhorRitmoLabel}
@@ -777,7 +865,7 @@ export default function AnaliseAtividadesPage() {
                   />
                   <StatCard
                     label="Maior Dist."
-                    value={analise.maiorDistancia.toFixed(1)}
+                    value={(analise.maiorDistancia || 0).toFixed(1)}
                     unit="km"
                     hint="Recorde de distância"
                     icon="📈"
@@ -794,7 +882,7 @@ export default function AnaliseAtividadesPage() {
               <p className="text-[13px] font-medium text-ink-300">Sua frequência semanal nos {periodoLabel}.</p>
             </div>
             <div className="text-left sm:text-right">
-              <span className="text-4xl font-black text-accent">{analise.frequenciaSemanal.toFixed(1)}</span>
+              <span className="text-4xl font-black text-accent">{(analise.frequenciaSemanal || 0).toFixed(1)}</span>
               <span className="block text-xs font-black text-ink-400">treinos / semana</span>
             </div>
           </div>
@@ -859,14 +947,14 @@ export default function AnaliseAtividadesPage() {
                 <SectionHeading title="Evolução temporal" description="Acompanhe a variação das suas métricas ao longo do tempo." />
                 <div className="mt-4 grid gap-6 lg:grid-cols-2">
                   <PremiumLineChart
-                    points={analise.evolucaoDistancia}
+                    points={analise.evolucaoDistancia || []}
                     label={conf.label1}
                     unit={conf.unit1}
                     colorFrom={conf.colorFrom1}
                     colorTo={conf.colorTo1}
                   />
                   <PremiumLineChart
-                    points={analise.evolucaoRitmo}
+                    points={analise.evolucaoRitmo || []}
                     label={conf.label2}
                     unit={conf.unit2}
                     colorFrom={conf.colorFrom2}
@@ -896,7 +984,7 @@ export default function AnaliseAtividadesPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-ink-100 font-bold">
-                  {analise.ultimosTreinos.map((t) => (
+                  {(analise.ultimosTreinos || []).map((t) => (
                     <tr key={t.id} className="transition-colors hover:bg-ink-50/60">
                       <td className="px-6 py-4 text-ink-900">{t.data ? formatarDataCurta(t.data) : ""}</td>
                       <td className="px-6 py-4 text-ink-800">{t.distancia > 0 ? `${t.distancia.toFixed(2)} km` : "—"}</td>
@@ -914,7 +1002,7 @@ export default function AnaliseAtividadesPage() {
 
             {/* Cards em mobile */}
             <div className="space-y-3 sm:hidden">
-              {analise.ultimosTreinos.map((t) => (
+              {(analise.ultimosTreinos || []).map((t) => (
                 <div key={t.id} className="rounded-2xl border border-ink-100 p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-black text-ink-900">{t.data ? formatarDataCurta(t.data) : "—"}</span>

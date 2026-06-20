@@ -54,6 +54,26 @@ public class AtividadeServico {
         );
     }
 
+    public RegistroAtividade registrarManual(AtletaId atletaId, String esporte, LocalDateTime data,
+                                             double distancia, long duracaoSegundos,
+                                             Integer esforcoPercebido, String observacoes,
+                                             String metricasJson) {
+        return registrarSemEvento(
+            atletaId,
+            null,
+            esporte,
+            data,
+            distancia,
+            duracaoSegundos,
+            null,
+            0.0,
+            esforcoPercebido,
+            observacoes,
+            "MANUAL",
+            metricasJson
+        );
+    }
+
     public RegistroAtividade registrarComCheckIn(AtletaId atletaId, CheckInId checkInId, String esporte,
                                                  LocalDateTime data, double distancia, long duracaoSegundos,
                                                  Intensidade intensidade, double xpCalculado,
@@ -72,9 +92,11 @@ public class AtividadeServico {
         if (checkIn.isCancelado()) {
             throw new IllegalStateException("Nao e possivel registrar atividade em CheckIn cancelado");
         }
+        if (checkIn.temCheckout()) {
+            throw new IllegalStateException("Nao e possivel registrar atividade apos checkout");
+        }
 
-        var registro = new RegistroAtividade(
-            null, // id
+        var salvo = registrarSemEvento(
             atletaId,
             checkInId,
             esporte.toUpperCase().trim(),
@@ -86,18 +108,46 @@ public class AtividadeServico {
             esforcoPercebido,
             observacoes,
             origemRegistro,
-            metricasJson,
-            LocalDateTime.now(),
-            LocalDateTime.now()
+            metricasJson
         );
-
-        var salvo = repositorio.salvar(registro);
 
         checkIn.marcarAtividadeRegistrada();
         checkInRepositorio.salvar(checkIn);
 
         barramento.postar(new AtividadeRegistradaEvento(salvo, atletaId));
         return salvo;
+    }
+
+    private RegistroAtividade registrarSemEvento(AtletaId atletaId, CheckInId checkInId, String esporte,
+                                                 LocalDateTime data, double distancia, long duracaoSegundos,
+                                                 Intensidade intensidade, double xpCalculado,
+                                                 Integer esforcoPercebido, String observacoes,
+                                                 String origemRegistro, String metricasJson) {
+        notNull(atletaId, "O id do Atleta nao pode ser nulo");
+        notBlank(esporte, "O esporte nao pode estar em branco");
+        notNull(data, "A data nao pode ser nula");
+        isTrue(distancia >= 0, "A distancia nao pode ser negativa");
+        isTrue(duracaoSegundos > 0, "A duracao deve ser positiva");
+
+        var registro = new RegistroAtividade(
+            null,
+            atletaId,
+            checkInId,
+            esporte.toUpperCase().trim(),
+            data,
+            distancia,
+            duracaoSegundos,
+            intensidade,
+            xpCalculado,
+            esforcoPercebido,
+            observacoes,
+            origemRegistro.toUpperCase().trim(),
+            metricasJson,
+            LocalDateTime.now(),
+            LocalDateTime.now()
+        );
+
+        return repositorio.salvar(registro);
     }
 
 

@@ -22,7 +22,22 @@ public class SessaoControlador {
     @Autowired private SessaoServicoAplicacao sessaoServicoAplicacao;
 
     @GetMapping
-    public List<SessaoResumo> listar() {
+    public List<SessaoResumo> listar(
+            @RequestParam(required = false) Integer spotId,
+            @RequestParam(required = false) Boolean ativas) {
+        if (spotId != null) {
+            return sessaoServico.listarPorSpot(new SpotId(spotId)).stream()
+                .filter(s -> ativas == null || !ativas || s.estaAtiva(LocalDateTime.now()))
+                .map(SessaoDtoResumo::new)
+                .map(SessaoResumo.class::cast)
+                .toList();
+        }
+        if (Boolean.TRUE.equals(ativas)) {
+            return sessaoServico.listarAtivas().stream()
+                .map(SessaoDtoResumo::new)
+                .map(SessaoResumo.class::cast)
+                .toList();
+        }
         return sessaoServicoAplicacao.pesquisarResumos();
     }
 
@@ -43,10 +58,35 @@ public class SessaoControlador {
         sessaoServico.cancelar(new SessaoId(id));
     }
 
+    @DeleteMapping("/{id}")
+    public void remover(@PathVariable int id) {
+        sessaoServico.remover(new SessaoId(id));
+    }
+
     public static class SessaoDto {
         public int spotId;
         public LocalDateTime inicio;
         public LocalDateTime fim;
         public String descricao;
+    }
+
+    private record SessaoDtoResumo(
+        int getId,
+        int getSpotId,
+        LocalDateTime getPeriodoInicio,
+        LocalDateTime getPeriodoFim,
+        String getDescricao,
+        boolean isCancelada
+    ) implements SessaoResumo {
+        SessaoDtoResumo(com.sportsnap.session.dominio.sessao.Sessao sessao) {
+            this(
+                sessao.getId().getId(),
+                sessao.getSpotId().getId(),
+                sessao.getPeriodo().getInicio(),
+                sessao.getPeriodo().getFim(),
+                sessao.getDescricao(),
+                sessao.isCancelada()
+            );
+        }
     }
 }

@@ -58,7 +58,7 @@ class JpaMapeador {
         var sessaoId = new SessaoId(jpa.sessaoId);
         var coordenada = new Coordenada(jpa.latitude, jpa.longitude);
         return new CheckIn(new CheckInId(jpa.id), atletaId, sessaoId,
-            jpa.horario, coordenada, jpa.cancelado, jpa.atividadeRegistrada);
+            jpa.horario, coordenada, jpa.cancelado, jpa.atividadeRegistrada, jpa.checkoutHorario);
     }
 
     CheckInJpa paraJpa(CheckIn dominio) {
@@ -73,6 +73,7 @@ class JpaMapeador {
         jpa.longitude = dominio.getCoordenada().getLongitude();
         jpa.cancelado = dominio.isCancelado();
         jpa.atividadeRegistrada = dominio.temAtividadeRegistrada();
+        jpa.checkoutHorario = dominio.getCheckoutHorario();
         return jpa;
     }
 

@@ -52,6 +52,11 @@ public class CheckInControlador {
         checkInServico.cancelar(new CheckInId(id));
     }
 
+    @PostMapping("/{id}/checkout")
+    public CheckInDto checkout(@PathVariable int id) {
+        return paraDto(checkInServico.checkout(new CheckInId(id)));
+    }
+
     private CheckInDto paraDto(CheckIn c) {
         var dto = new CheckInDto();
         dto.id = c.getId() != null ? c.getId().getId() : null;
@@ -62,6 +67,7 @@ public class CheckInControlador {
         dto.longitude = c.getCoordenada().getLongitude();
         dto.cancelado = c.isCancelado();
         dto.atividadeRegistrada = c.temAtividadeRegistrada();
+        dto.checkoutHorario = c.getCheckoutHorario();
         return dto;
     }
 
@@ -74,5 +80,6 @@ public class CheckInControlador {
         public double longitude;
         public boolean cancelado;
         public boolean atividadeRegistrada;
+        public LocalDateTime checkoutHorario;
     }
 }
