@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { useCart } from "@/lib/cart";
 import { comprarLicenca, obterAssinatura, AssinaturaDto } from "@/lib/marketplace";
+import { obterPerfilPorUsuario, publicarNoFeed } from "@/lib/social";
 import { PageHeader } from "@/components/PageHeader";
 import { useEffect } from "react";
 import { Button } from "@/components/Button";
@@ -40,8 +41,14 @@ export default function CarrinhoPage() {
     setFinalizando(true);
     setErro(null);
     try {
-      // Compra cada foto no carrinho
       await Promise.all(cart.map((foto) => comprarLicenca(sessao.id, foto.id)));
+      // Publica no feed social cada foto adquirida
+      const perfil = await obterPerfilPorUsuario(sessao.id).catch(() => null);
+      if (perfil?.id) {
+        await Promise.all(cart.map(foto =>
+          publicarNoFeed(perfil.id!.id, "LICENCA_ADQUIRIDA", foto.id).catch(() => {})
+        ));
+      }
       clearCart();
       router.push("/perfil?checkout=sucesso");
     } catch {

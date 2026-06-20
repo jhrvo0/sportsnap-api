@@ -1,6 +1,6 @@
 #FileLock
-#Tue Jun 16 22:30:05 BRT 2026
-hostName=192.168.15.14
-id=19ed3331e0085cc2edaaae0b5c17356827bf9e6b791
+#Fri Jun 19 23:37:53 GMT-03:00 2026
+hostName=localhost
+id=19ee2e44c58bcccf08f57064395fd2951fb72fa432d
 method=file
-server=192.168.15.14\:64964
+server=localhost\:58152

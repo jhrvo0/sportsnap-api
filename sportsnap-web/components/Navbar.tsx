@@ -6,12 +6,12 @@ import { useAuth } from "@/lib/auth";
 
 const linksAtleta = [
   { href: "/atletas", label: "Dashboard" },
+  { href: "/social/feed", label: "Feed" },
   { href: "/atividades/analise", label: "Evolução Real" },
   { href: "/loja", label: "Loja" },
   { href: "/clube", label: "Pass ⭐️" },
   { href: "/favoritos", label: "Favoritos" },
   { href: "/checkin", label: "Check-in" },
-  { href: "/social", label: "Social" },
   { href: "/ranking", label: "Ranking" },
   { href: "/spots", label: "Spots" },
   { href: "/sessoes", label: "Sessões" },
@@ -20,7 +20,7 @@ const linksAtleta = [
 const linksFotografo = [
   { href: "/lotes", label: "Meus Álbuns" },
   { href: "/upload", label: "Upload" },
-  { href: "/social", label: "Social" },
+  { href: "/social/feed", label: "Feed" },
   { href: "/spots", label: "Spots" },
   { href: "/sessoes", label: "Sessões" },
 ];

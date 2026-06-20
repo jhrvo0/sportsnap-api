@@ -1,116 +1,132 @@
 # SportSnap API
 
-Ecossistema digital que une performance esportiva real a fotografia profissional. O core business esta na mecanica de **Shadow Stats / Reveal**: treinos geram progresso "latente" que so e validado e exposto publicamente quando o atleta adquire uma licenca de imagem capturada por um fotografo.
+Ecossistema digital que une performance esportiva real a fotografia profissional. Atletas registram treinos, fotógrafos capturam momentos esportivos, e a plataforma conecta os dois através de licenciamento de imagens e uma camada social completa.
 
 ## Arquitetura
 
-O sistema e composto por **3 modulos** independentes seguindo **Clean Architecture** e **DDD**:
+O sistema é composto por **3 microsserviços** independentes seguindo **Clean Architecture** e **DDD**:
 
 ```
 sportsnap-api/
-├── sportsnap-gamification-service   — Core Domain
-├── sportsnap-marketplace-service    — Supporting Domain
-├── sportsnap-session-service        — Generic Domain
-└── docs/                            — Documentacao do projeto
+├── sportsnap-social-service      — Core Domain (Social, Perfil, Feed, Conexões)
+├── sportsnap-marketplace-service — Supporting Domain (Fotos, Licenças, Marketplace)
+├── sportsnap-session-service     — Generic Domain (Spots, Sessões, Check-ins)
+└── docs/                         — Documentação do projeto
 ```
 
-| Modulo | Responsabilidade |
-|---|---|
-| **Gamification** | Shadow Stats, Reveal/Sincronizacao, Ranking, Calculo de Overall |
-| **Marketplace** | Fotos, Lotes, Licencas de Imagem, Split Financeiro, Motor de Sugestao |
-| **Session** | Spots, Sessoes, Check-ins, Registros de Atividade |
-
-## 1a Entrega — Foco no Dominio e BDD
-
-Esta entrega foca na **modelagem do dominio puro** com validacao via **testes BDD (Cucumber)**. Nao ha dependencia de banco de dados, UI ou infraestrutura externa.
-
-### Escopo
-
-- **8 historias completas** (2 por integrante), cada uma com multiplas operacoes (CRUD + regras de negocio) — nao apenas verbos isolados
-- Regras de negocio blindadas na camada de Dominio (entidades puras sem JPA)
-- Value Objects tipados para todos os IDs (`AtletaId`, `SpotId`, `FotoId`, etc.)
-- Domain Events publicados via `EventoBarramento`
-- Repositorios in-memory em `infraestrutura/memoria/` para isolamento total dos testes
-- Linguagem Onipresente aplicada em todo o codigo e documentacao
-
-### Historias por Integrante
-
-| Integrante | Historia 1 | Historia 2 |
+| Módulo | Responsabilidade | Porta |
 |---|---|---|
-| **Antônio Paes** | H03 — Gerenciar Lotes de Fotos | H04 — Dashboard e Metricas do Fotografo |
-| **Galileu Calaça** | H07 — Sincronizar Carta do Atleta | H08 — Ranking e Evolucao |
-| **Marco Maciel** | H05 — Comprar Licenca de Foto | H06 — Motor de Sugestao de Fotos |
-| **João Henrique** | H01 — Gerenciar Sessao de Treino | H02 — Gerenciar Check-in e Atividade |
+| **Social** | Perfil social, conexões, feed, posts esportivos, comentários, notificações, ranking, sincronização de carta | 8081 |
+| **Marketplace** | Fotos, lotes, licenças de imagem, split financeiro, motor de sugestão, assinatura | 8082 |
+| **Session** | Spots, sessões, check-ins, registros de atividade real | 8083 |
 
-## Stack Tecnologica
+## Histórias por Integrante
+
+| Integrante | Histórias |
+|---|---|
+| **Antônio Paes** | H03 — Gerenciar Lotes de Fotos · H04 — Dashboard do Fotógrafo |
+| **Galileu Calaça** | H09 — Perfil Social e Rede de Conexões · H10 — Feed, Posts Esportivos e Notificações |
+| **Marco Maciel** | H05 — Comprar Licença · H06 — Motor de Sugestão |
+| **João Henrique** | H01 — Gerenciar Sessão · H02 — Check-in e Registro Real de Atividade |
+
+## Padrões de Projeto GoF Implementados
+
+| Padrão | Integrante | Serviço | Arquivos `.java` envolvidos |
+|---|---|---|---|
+| **Strategy** | Galileu Calaça | Social | `dominio/conexao/ConexaoServico.java` (algoritmo de sugestão por score ponderado) |
+| **Observer** | Galileu Calaça | Social | `dominio/evento/EventoBarramento.java` (interface), `infraestrutura/evento/EventoBarramentoSpring.java`, `infraestrutura/evento/SocialEventoListener.java` |
+| **Repository** | Galileu Calaça | Social | `dominio/perfil/PerfilRepositorio.java`, `dominio/conexao/ConexaoRepositorio.java`, `dominio/feed/ItemFeedRepositorio.java`, `dominio/notificacao/NotificacaoRepositorio.java` (interfaces no domínio, implementações em infraestrutura) |
+| **Decorator** | Marco Maciel | Marketplace | `dominio/foto/FotoDecorador.java`, `dominio/foto/FotoComMarcaDagua.java`, `dominio/foto/FotoPreviewBasico.java` |
+
+## Stack Tecnológica
 
 | Camada | Tecnologia |
 |---|---|
-| Linguagem | Java 21 |
+| Linguagem | Java 17 |
 | Framework | Spring Boot 3.4.4 |
+| ORM | JPA (Spring Data JPA) + Flyway |
+| Banco de dados | H2 in-memory |
 | Testes BDD | Cucumber 7.20 + JUnit 5 |
-| Validacao de dominio | Apache Commons Lang3 (`Validate`) |
-| Build | Maven (wrapper incluido) |
+| Validação de domínio | Apache Commons Lang3 (`Validate`) |
+| Build | Maven (wrapper incluído) |
+| Frontend | Next.js 14 (App Router) + TypeScript + TailwindCSS |
 | Arquitetura | Clean Architecture + DDD |
 
-## Pre-requisitos
+## Pré-requisitos
 
-- **Java 21** (JDK)
+- **Java 17+** (JDK)
 - **Maven 3.9+** (ou use o wrapper `./mvnw`)
+- **Node.js 18+** + npm (para o frontend)
 
-## Como Executar os Testes
+## Como Executar
 
 ```bash
-# Rodar todos os testes (BDD + contexto Spring)
-./mvnw clean test
+# Terminal 1 — Social (porta 8081)
+./mvnw -pl sportsnap-social-service spring-boot:run
 
-# Rodar apenas testes BDD (Cucumber)
-./mvnw test -Pcucumber
+# Terminal 2 — Marketplace (porta 8082)
+./mvnw -pl sportsnap-marketplace-service spring-boot:run
 
-# Rodar testes de um modulo especifico
-./mvnw test -pl sportsnap-gamification-service
-./mvnw test -pl sportsnap-session-service
-./mvnw test -pl sportsnap-marketplace-service
+# Terminal 3 — Session (porta 8083)
+./mvnw -pl sportsnap-session-service spring-boot:run
+
+# Terminal 4 — Frontend (porta 3000)
+cd sportsnap-web && npm run dev
+```
+
+## Como Executar os Testes BDD
+
+```bash
+# Serviço Social (H07-H12)
+./mvnw -pl sportsnap-social-service test
+
+# Serviço Session (H01-H02)
+./mvnw -pl sportsnap-session-service test
+
+# Serviço Marketplace (H03-H06)
+./mvnw -pl sportsnap-marketplace-service test
 ```
 
 ## Estrutura de Pacotes (Clean Architecture)
 
-Cada modulo segue a mesma estrutura, seguindo o padrao de referencia do professor:
+Cada módulo segue a mesma estrutura, seguindo o padrão de referência do professor:
 
 ```
 com.sportsnap.<servico>/
-├── dominio/                    # PURO — zero dependencias externas (JPA, Spring, HTTP)
-│   ├── <contexto>/             # sub-pacote por bounded sub-context
+├── dominio/                    # PURO — zero dependências externas
+│   ├── <contexto>/
 │   │   ├── XxxId.java          # Value Object para identidade
 │   │   ├── Xxx.java            # Entidade (2 construtores + Validate + Domain Events)
-│   │   ├── XxxRepositorio.java # interface (port)
-│   │   └── XxxServico.java     # servico de dominio
+│   │   ├── XxxRepositorio.java # Interface (port)
+│   │   └── XxxServico.java     # Serviço de domínio
 │   └── evento/EventoBarramento.java
+├── aplicacao/                  # DTOs e serviços de consulta (read model)
+├── apresentacao/               # REST Controllers
 └── infraestrutura/
-    ├── memoria/XxxRepositorioMemoria.java   # adapter in-memory (1a entrega)
-    └── evento/EventoBarramentoSpring.java   # publica via ApplicationEventPublisher
+    ├── persistencia/jpa/       # @Entity + JpaRepository + @Repository impl (mesmo arquivo)
+    └── evento/                 # EventoBarramentoSpring
 ```
 
-## Cenarios BDD (Cucumber)
+## Cenários BDD (Cucumber)
 
-Cada historia possui um arquivo `.feature` em portugues com multiplos cenarios (5 a 9 por historia) cobrindo golden path, edge cases e regras de negocio:
-
-| Modulo | Feature | Historia |
+| Módulo | Feature | História |
 |---|---|---|
-| Session | `h01-gerenciar-sessao.feature` | H01 — Gerenciar Sessao de Treino |
-| Session | `h02-checkin-atividade.feature` | H02 — Gerenciar Check-in e Atividade |
+| Session | `h01-gerenciar-sessao.feature` | H01 — Gerenciar Sessão de Treino |
+| Session | `h02-checkin-atividade.feature` | H02 — Check-in e Atividade |
 | Marketplace | `h03-gerenciar-lote.feature` | H03 — Gerenciar Lotes de Fotos |
-| Marketplace | `h04-dashboard-fotografo.feature` | H04 — Dashboard do Fotografo |
-| Marketplace | `h05-comprar-licenca.feature` | H05 — Comprar Licenca de Foto |
-| Marketplace | `h06-motor-sugestao.feature` | H06 — Motor de Sugestao |
-| Gamification | `h07-sincronizar-carta.feature` | H07 — Sincronizar Carta do Atleta |
-| Gamification | `h08-ranking-evolucao.feature` | H08 — Ranking e Evolucao |
+| Marketplace | `h04-dashboard-fotografo.feature` | H04 — Dashboard do Fotógrafo |
+| Marketplace | `h05-comprar-licenca.feature` | H05 — Comprar Licença |
+| Marketplace | `h06-motor-sugestao.feature` | H06 — Motor de Sugestão |
+| Social | `h09-perfil-social.feature` | H09 — Perfil Social e Rede de Conexões |
+| Social | `h10-conexoes.feature` | H10 — Conexões, Pedidos e Bloqueios |
+| Social | `h11-feed.feature` | H11 — Feed de Atividades e Curtidas |
+| Social | `h12-notificacoes.feature` | H12 — Notificações |
 
-## Documentacao
+## Documentação
 
-- [`docs/dominio.md`](docs/dominio.md) — Descricao do dominio, linguagem onipresente, regras de negocio, niveis DDD
-- [`docs/user-story-map.md`](docs/user-story-map.md) — Mapa das 8 historias completas (H01-H08) com operacoes detalhadas
-- [`docs/prototipos.md`](docs/prototipos.md) — Prototipos de baixa e alta fidelidade
+- [`docs/dominio.md`](docs/dominio.md) — Descrição do domínio, linguagem onipresente, regras de negócio
+- [`docs/user-story-map.md`](docs/user-story-map.md) — Mapa das histórias com operações detalhadas
+- [`docs/prototipos.md`](docs/prototipos.md) — Protótipos de baixa e alta fidelidade
 - [`docs/sportsnap.cml`](docs/sportsnap.cml) — Modelo Context Mapper (DDD)
 
 ## Equipe
@@ -120,5 +136,5 @@ Cada historia possui um arquivo `.feature` em portugues com multiplos cenarios (
 - **Marco Maciel** — [@oMarcoMaciel](https://github.com/oMarcoMaciel)
 - **João Henrique** — [@jhrvo0](https://github.com/jhrvo0)
 
-**Disciplina:** Engenharia de Requisitos  
-**Instituicao:** CESAR School
+**Disciplina:** Engenharia de Requisitos
+**Instituição:** CESAR School

@@ -1,6 +1,6 @@
 "use client";
 
-const BASE = process.env.NEXT_PUBLIC_GAMIFICACAO_URL || "http://localhost:8081";
+const BASE = process.env.NEXT_PUBLIC_SOCIAL_URL || "http://localhost:8081";
 
 // --- Tipos ---
 
@@ -16,6 +16,7 @@ export type PerfilSocial = {
   publico: boolean;
   totalSeguidores: number;
   totalSeguindo: number;
+  fotoPerfil: string | null;
 };
 
 export type PerfilResumo = {
@@ -91,7 +92,7 @@ export async function criarPerfil(
 export async function editarPerfil(
   id: number,
   solicitanteId: number,
-  dados: { nomeExibicao: string; bio?: string; esporte?: string; localidade?: string; visibilidade?: string }
+  dados: { nomeExibicao: string; bio?: string; esporte?: string; localidade?: string; visibilidade?: string; fotoPerfil?: string }
 ): Promise<PerfilSocial> {
   const r = await fetch(`${BASE}/api/perfis/${id}`, {
     method: "PUT",
@@ -163,6 +164,27 @@ export async function bloquear(bloqueadorId: number, bloqueadoId: number): Promi
   if (!r.ok) throw new Error("Erro ao bloquear");
 }
 
+export async function desbloquear(bloqueadorId: number, bloqueadoId: number): Promise<void> {
+  const r = await fetch(`${BASE}/api/conexoes/desbloquear`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ seguidorId: bloqueadorId, seguidoId: bloqueadoId }),
+  });
+  if (!r.ok) throw new Error("Erro ao desbloquear");
+}
+
+export type Bloqueio = {
+  id: { id: number };
+  bloqueadorId: { id: number };
+  bloqueadoId: { id: number };
+};
+
+export async function listarBloqueados(perfilId: number): Promise<Bloqueio[]> {
+  const r = await fetch(`${BASE}/api/conexoes/${perfilId}/bloqueados`, { cache: "no-store" });
+  if (!r.ok) return [];
+  return r.json();
+}
+
 export async function listarSeguindo(perfilId: number): Promise<Conexao[]> {
   const r = await fetch(`${BASE}/api/conexoes/${perfilId}/seguindo`, { cache: "no-store" });
   if (!r.ok) return [];
@@ -205,6 +227,86 @@ export async function descurtir(itemId: number, usuarioId: number): Promise<void
     body: JSON.stringify({ usuarioId }),
   });
   if (!r.ok) throw new Error("Erro ao descurtir");
+}
+
+// --- Post Esportivo ---
+
+export type PostEsportivo = {
+  id: { id: number };
+  autorId: { id: number };
+  conteudo: string;
+  esporte: string | null;
+  criadoEm: string;
+};
+
+export async function criarPost(autorId: number, conteudo: string, esporte?: string): Promise<PostEsportivo> {
+  const r = await fetch(`${BASE}/api/posts`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ autorId, conteudo, esporte: esporte || null }),
+  });
+  if (!r.ok) throw new Error("Erro ao criar post");
+  return r.json();
+}
+
+export async function obterPost(id: number): Promise<PostEsportivo | null> {
+  const r = await fetch(`${BASE}/api/posts/${id}`, { cache: "no-store" });
+  if (!r.ok) return null;
+  return r.json();
+}
+
+export async function listarItensFeedPorAutor(perfilId: number): Promise<ItemFeed[]> {
+  const r = await fetch(`${BASE}/api/feed/autor/${perfilId}`, { cache: "no-store" });
+  if (!r.ok) return [];
+  return r.json();
+}
+
+export async function listarPostsPorAutor(autorId: number): Promise<PostEsportivo[]> {
+  const r = await fetch(`${BASE}/api/posts?autorId=${autorId}`, { cache: "no-store" });
+  if (!r.ok) return [];
+  return r.json();
+}
+
+// --- Comentários ---
+
+export type Comentario = {
+  id: { id: number };
+  itemFeedId: { id: number };
+  autorId: { id: number };
+  conteudo: string;
+  parentId: { id: number } | null;
+  criadoEm: string;
+  resposta: boolean;
+};
+
+export async function listarComentarios(itemId: number): Promise<Comentario[]> {
+  const r = await fetch(`${BASE}/api/comentarios?itemId=${itemId}`, { cache: "no-store" });
+  if (!r.ok) return [];
+  return r.json();
+}
+
+export async function criarComentario(
+  itemFeedId: number, autorId: number, conteudo: string, parentId?: number
+): Promise<Comentario> {
+  const r = await fetch(`${BASE}/api/comentarios`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ itemFeedId, autorId, conteudo, parentId: parentId ?? null }),
+  });
+  if (!r.ok) throw new Error("Erro ao comentar");
+  return r.json();
+}
+
+export async function removerComentario(comentarioId: number, autorId: number): Promise<void> {
+  await fetch(`${BASE}/api/comentarios/${comentarioId}?autorId=${autorId}`, { method: "DELETE" });
+}
+
+export async function publicarNoFeed(autorId: number, tipo: string, referenciaId: number): Promise<void> {
+  await fetch(`${BASE}/api/feed/publicar`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ autorId, tipo, referenciaId }),
+  });
 }
 
 // --- Notificações ---

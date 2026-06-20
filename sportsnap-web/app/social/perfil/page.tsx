@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import {
-  obterPerfilPorUsuario, criarPerfil, editarPerfil,
+  obterPerfilPorUsuario, editarPerfil,
   type PerfilSocial,
 } from "@/lib/social";
 import { PageHeader } from "@/components/PageHeader";
@@ -42,33 +42,25 @@ export default function PerfilSocialPage() {
         setLocalidade(p.localidade ?? "");
         setVisibilidade(p.visibilidade);
       } else {
-        setNome(sessao.nome);
+        // Sem perfil social — redireciona para o cadastro criar um
+        router.replace("/social");
       }
     });
   }, [sessao, carregando, router]);
 
   async function handleSalvar() {
-    if (!sessao) return;
+    if (!sessao || !perfil?.id) return;
     setSalvando(true);
     setErro(null);
     try {
-      if (perfil?.id) {
-        const atualizado = await editarPerfil(perfil.id.id, sessao.id, {
-          nomeExibicao: nome,
-          bio: bio || undefined,
-          esporte: esporte || undefined,
-          localidade: localidade || undefined,
-          visibilidade,
-        });
-        setPerfil(atualizado);
-      } else {
-        const criado = await criarPerfil(
-          sessao.id,
-          nome,
-          sessao.role === "atleta" ? "ATLETA" : "FOTOGRAFO"
-        );
-        setPerfil(criado);
-      }
+      const atualizado = await editarPerfil(perfil.id.id, sessao.id, {
+        nomeExibicao: nome,
+        bio: bio || undefined,
+        esporte: esporte || undefined,
+        localidade: localidade || undefined,
+        visibilidade,
+      });
+      setPerfil(atualizado);
       setAviso("Perfil salvo com sucesso!");
       setTimeout(() => setAviso(null), 4000);
     } catch {
@@ -200,7 +192,7 @@ export default function PerfilSocialPage() {
               disabled={salvando || !nome.trim()}
               className="w-full"
             >
-              {salvando ? "Salvando..." : perfil ? "Salvar alterações" : "Criar perfil"}
+              {salvando ? "Salvando..." : "Salvar alterações"}
             </Button>
           </div>
         </Card>

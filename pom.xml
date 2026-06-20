@@ -19,7 +19,7 @@
     <description>Ecossistema digital que une performance esportiva real a fotografia profissional</description>
 
     <modules>
-        <module>sportsnap-gamification-service</module>
+        <module>sportsnap-social-service</module>
         <module>sportsnap-marketplace-service</module>
         <module>sportsnap-session-service</module>
     </modules>

@@ -1,6 +1,0 @@
-spring:
-  application:
-    name: sportsnap-gamification-service
-
-server:
-  port: 8081

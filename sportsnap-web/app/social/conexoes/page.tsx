@@ -9,6 +9,7 @@ import {
   aprovarPedido, recusarPedido, bloquear,
   type PerfilSocial, type PerfilResumo, type Conexao, type PedidoConexao, type SugestaoConexao,
 } from "@/lib/social";
+import Link from "next/link";
 import { PageHeader } from "@/components/PageHeader";
 import { Card } from "@/components/Card";
 import { Button } from "@/components/Button";
@@ -188,7 +189,9 @@ export default function ConexoesPage() {
                     <div className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-ink-200 font-bold text-ink-700">
                       {nomeDoId(c.seguidoId.id).charAt(0).toUpperCase()}
                     </div>
-                    <p className="flex-1 font-medium text-ink-900">{nomeDoId(c.seguidoId.id)}</p>
+                    <Link href={`/social/usuario/${c.seguidoId.id}`} className="flex-1 font-medium text-ink-900 hover:text-accent transition-colors truncate">
+                      {nomeDoId(c.seguidoId.id)}
+                    </Link>
                     <Button
                       variant="ghost"
                       size="sm"
