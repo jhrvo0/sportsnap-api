@@ -1,4 +1,5 @@
 import { Spot, Sessao } from "./api";
+import { fromDateTimeLocalValue } from "./session-datetime.mjs";
 
 const SESSION_URL = process.env.NEXT_PUBLIC_SESSION_URL ?? "http://localhost:8083";
 
@@ -63,8 +64,8 @@ export async function listarSessoes(): Promise<Sessao[]> {
 export async function criarSessao(sessao: Omit<Sessao, "id">): Promise<void> {
   const body = {
     spotId: sessao.spotId,
-    inicio: sessao.periodoInicio.slice(0, 19),
-    fim: sessao.periodoFim.slice(0, 19),
+    inicio: fromDateTimeLocalValue(sessao.periodoInicio),
+    fim: fromDateTimeLocalValue(sessao.periodoFim),
     descricao: sessao.descricao,
   };
   const r = await fetch(`${SESSION_URL}/api/sessoes`, {
@@ -78,8 +79,8 @@ export async function criarSessao(sessao: Omit<Sessao, "id">): Promise<void> {
 export async function atualizarSessao(id: number, sessao: Omit<Sessao, "id">): Promise<void> {
   const body = {
     spotId: sessao.spotId,
-    inicio: sessao.periodoInicio.slice(0, 19),
-    fim: sessao.periodoFim.slice(0, 19),
+    inicio: fromDateTimeLocalValue(sessao.periodoInicio),
+    fim: fromDateTimeLocalValue(sessao.periodoFim),
     descricao: sessao.descricao,
   };
   const r = await fetch(`${SESSION_URL}/api/sessoes/${id}`, {

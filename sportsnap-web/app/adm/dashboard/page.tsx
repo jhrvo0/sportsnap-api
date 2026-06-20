@@ -66,7 +66,7 @@ export default function AdminDashboardPage() {
           <h1 className="text-4xl font-black text-slate-900">Dashboard Administrativo</h1>
           <p className="text-lg text-slate-600">Gestão de Planos de Assinatura</p>
         </div>
-        <Button onClick={() => { logout(); router.push("/adm"); }} tone="danger">
+        <Button onClick={() => { logout(); router.push("/adm"); }} variant="danger">
           Sair
         </Button>
       </div>
@@ -135,7 +135,7 @@ export default function AdminDashboardPage() {
                       </p>
                     </div>
                     <Button 
-                      tone="danger" 
+                      variant="danger"
                       onClick={() => handleRemoverPlano(plano.id)}
                     >
                       Remover
