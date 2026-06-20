@@ -270,4 +270,25 @@ class JpaMapeador {
         jpa.criadoEm   = dominio.getCriadoEm() != null ? dominio.getCriadoEm() : LocalDateTime.now();
         return jpa;
     }
+
+    // --- Mensagem ---
+
+    com.sportsnap.gamification.dominio.mensagem.Mensagem paraDominio(MensagemJpa jpa) {
+        return new com.sportsnap.gamification.dominio.mensagem.Mensagem(
+            new com.sportsnap.gamification.dominio.mensagem.MensagemId(jpa.id),
+            new com.sportsnap.gamification.dominio.perfil.PerfilId(jpa.remetenteId),
+            new com.sportsnap.gamification.dominio.perfil.PerfilId(jpa.destinatarioId),
+            jpa.conteudo, jpa.lida, jpa.criadaEm);
+    }
+
+    MensagemJpa paraJpa(com.sportsnap.gamification.dominio.mensagem.Mensagem dominio) {
+        var jpa = new MensagemJpa();
+        if (dominio.getId() != null) jpa.id = dominio.getId().getId();
+        jpa.remetenteId    = dominio.getRemetenteId().getId();
+        jpa.destinatarioId = dominio.getDestinatarioId().getId();
+        jpa.conteudo       = dominio.getConteudo();
+        jpa.lida           = dominio.isLida();
+        jpa.criadaEm       = dominio.getCriadaEm() != null ? dominio.getCriadaEm() : LocalDateTime.now();
+        return jpa;
+    }
 }

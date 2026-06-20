@@ -7,8 +7,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.springframework.stereotype.Service;
 import com.sportsnap.gamification.dominio.perfil.PerfilId;
 
+@Service
 public class MensagemServico {
 
     private final MensagemRepositorio repositorio;
