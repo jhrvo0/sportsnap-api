@@ -3,14 +3,17 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { obterAssinatura, assinarPlano, cancelarAssinatura, AssinaturaDto } from "@/lib/marketplace";
+import { getPlanos, PlanoDto } from "@/lib/plans";
 
 export default function ClubeAssinatura() {
   const { sessao } = useAuth();
   const [assinatura, setAssinatura] = useState<AssinaturaDto | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingAcao, setLoadingAcao] = useState(false);
+  const [planos, setPlanos] = useState<PlanoDto[]>([]);
 
   useEffect(() => {
+    setPlanos(getPlanos());
     if (sessao) carregarAssinatura();
   }, [sessao]);
 
@@ -27,14 +30,15 @@ export default function ClubeAssinatura() {
     }
   }
 
-  async function handleAssinar() {
+  async function handleAssinar(planoId: string, nomePlano: string, cotas: number, preco: number, intervalo: string) {
     if (!sessao) return;
-    if (!confirm("Deseja assinar o SportSnap Pass por R$ 99,90/mês?")) return;
+    if (!confirm(`Deseja assinar o ${nomePlano} por R$ ${preco.toFixed(2).replace('.', ',')}/${intervalo}?`)) return;
     setLoadingAcao(true);
     try {
       const novaAss = await assinarPlano(sessao.id);
+      // Aqui poderíamos passar planoId para o backend se a API suportasse.
       setAssinatura(novaAss);
-      alert("Assinatura realizada com sucesso! Você ganhou 10 cotas.");
+      alert(`Assinatura realizada com sucesso! Você ganhou ${cotas} cotas.`);
     } catch (e) {
       alert("Erro ao assinar.");
     } finally {
@@ -107,41 +111,41 @@ export default function ClubeAssinatura() {
           )}
         </div>
       ) : (
-        <div className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100 text-center">
-          <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
-            ⭐️
-          </div>
-          <h2 className="text-3xl font-bold mb-4">Assine o SportSnap Pass</h2>
-          <div className="text-5xl font-black text-slate-900 mb-6">
-            R$ 99,90<span className="text-lg text-slate-500 font-normal">/mês</span>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {planos.map((plano) => (
+            <div key={plano.id} className="bg-white p-8 rounded-2xl shadow-xl border border-slate-100 text-center flex flex-col">
+              <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center text-4xl mx-auto mb-4">
+                ⭐️
+              </div>
+              <h2 className="text-2xl font-bold mb-4">{plano.nome}</h2>
+              <div className="text-4xl font-black text-slate-900 mb-6">
+                R$ {plano.preco.toFixed(2).replace('.', ',')}<span className="text-sm text-slate-500 font-normal">/{plano.intervalo}</span>
+              </div>
 
-          <ul className="text-left max-w-md mx-auto space-y-4 mb-8">
-            <li className="flex items-center gap-3">
-              <span className="text-green-500">✅</span>
-              <span><strong>10 fotos mensais</strong> inclusas na franquia</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="text-green-500">✅</span>
-              <span><strong>Rollover de cotas:</strong> não perdeu, acumulou!</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="text-green-500">✅</span>
-              <span><strong>Acesso Antecipado VIP:</strong> veja as fotos antes de todos</span>
-            </li>
-            <li className="flex items-center gap-3">
-              <span className="text-green-500">✅</span>
-              <span><strong>Apoie diretamente:</strong> seu dinheiro vai para quem você baixar</span>
-            </li>
-          </ul>
+              <ul className="text-left space-y-4 mb-8 flex-grow">
+                <li className="flex items-center gap-3 text-sm">
+                  <span className="text-green-500">✅</span>
+                  <span><strong>{plano.cotas} fotos</strong> por {plano.intervalo} inclusas na franquia</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm">
+                  <span className="text-green-500">✅</span>
+                  <span><strong>Rollover de cotas:</strong> não perdeu, acumulou!</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm">
+                  <span className="text-green-500">✅</span>
+                  <span><strong>Acesso Antecipado VIP:</strong> veja as fotos antes de todos</span>
+                </li>
+              </ul>
 
-          <button
-            onClick={handleAssinar}
-            disabled={loadingAcao}
-            className="w-full max-w-md mx-auto bg-slate-900 hover:bg-slate-800 text-white font-bold py-4 rounded-xl text-lg shadow-lg hover:shadow-xl transition-all"
-          >
-            {loadingAcao ? "Processando..." : "Assinar Agora e Ganhar 10 Cotas"}
-          </button>
+              <button
+                onClick={() => handleAssinar(plano.id, plano.nome, plano.cotas, plano.preco, plano.intervalo)}
+                disabled={loadingAcao}
+                className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-3 rounded-xl shadow-lg hover:shadow-xl transition-all disabled:opacity-50"
+              >
+                {loadingAcao ? "Processando..." : `Assinar Agora`}
+              </button>
+            </div>
+          ))}
         </div>
       )}
     </div>
