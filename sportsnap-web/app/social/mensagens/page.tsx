@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "@/lib/auth";
 import {
@@ -26,13 +26,18 @@ function dataRelativa(iso: string) {
 export default function MensagensPage() {
   const { sessao, carregando } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // Lê ?com=perfilId da URL sem useSearchParams (evita Suspense no Next.js 14)
+  const [comParam] = useState(() => {
+    if (typeof window === "undefined") return null;
+    return new URLSearchParams(window.location.search).get("com");
+  });
 
   const [meuPerfil, setMeuPerfil]         = useState<PerfilSocial | null>(null);
   const [inbox, setInbox]                 = useState<Mensagem[]>([]);
   const [todos, setTodos]                 = useState<PerfilResumo[]>([]);
-  const [conversaAtual, setConversaAtual] = useState<number | null>(null); // perfilId do outro
+  const [conversaAtual, setConversaAtual] = useState<number | null>(null);
   const [mensagens, setMensagens]         = useState<Mensagem[]>([]);
   const [texto, setTexto]                 = useState("");
   const [enviando, setEnviando]           = useState(false);
@@ -55,8 +60,9 @@ export default function MensagensPage() {
       setTodos(todosPerfis);
 
       // Abre conversa via query param ?com=perfilId
-      const comId = searchParams.get("com");
-      if (comId) abrirConversa(parseInt(comId), p.id!.id);
+      try {
+        if (comParam) abrirConversa(parseInt(comParam), p.id!.id);
+      } catch {}
     }).catch(() => setErro("Erro ao carregar mensagens"));
   }, [sessao, carregando, router]);
 

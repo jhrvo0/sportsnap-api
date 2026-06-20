@@ -326,3 +326,46 @@ export async function contarNaoLidas(perfilId: number): Promise<number> {
 export async function marcarTodasComoLidas(perfilId: number): Promise<void> {
   await fetch(`${BASE}/api/feed/${perfilId}/notificacoes/marcar-lidas`, { method: "POST" });
 }
+
+// --- Mensagens Diretas ---
+
+export type Mensagem = {
+  id: { id: number };
+  remetenteId: { id: number };
+  destinatarioId: { id: number };
+  conteudo: string;
+  lida: boolean;
+  criadaEm: string;
+};
+
+export async function enviarMensagem(remetenteId: number, destinatarioId: number, conteudo: string): Promise<Mensagem> {
+  const r = await fetch(`${BASE}/api/mensagens`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ remetenteId, destinatarioId, conteudo }),
+  });
+  if (!r.ok) throw new Error("Erro ao enviar mensagem");
+  return r.json();
+}
+
+export async function listarConversa(perfilId1: number, perfilId2: number): Promise<Mensagem[]> {
+  const r = await fetch(`${BASE}/api/mensagens/conversa?perfilId1=${perfilId1}&perfilId2=${perfilId2}`, { cache: "no-store" });
+  if (!r.ok) return [];
+  return r.json();
+}
+
+export async function listarInbox(perfilId: number): Promise<Mensagem[]> {
+  const r = await fetch(`${BASE}/api/mensagens/inbox?perfilId=${perfilId}`, { cache: "no-store" });
+  if (!r.ok) return [];
+  return r.json();
+}
+
+export async function contarMensagensNaoLidas(perfilId: number): Promise<number> {
+  const r = await fetch(`${BASE}/api/mensagens/nao-lidas?perfilId=${perfilId}`, { cache: "no-store" });
+  if (!r.ok) return 0;
+  return r.json();
+}
+
+export async function marcarMensagemComoLida(mensagemId: number, destinatarioId: number): Promise<void> {
+  await fetch(`${BASE}/api/mensagens/${mensagemId}/lida?destinatarioId=${destinatarioId}`, { method: "POST" });
+}

@@ -145,14 +145,19 @@ export default function PerfilUsuarioPage() {
               <div className="flex items-center gap-3 flex-wrap mb-2">
                 <h1 className="text-xl font-bold text-ink-900">{perfil.nomeExibicao}</h1>
                 {!isOwn && meuPerfil && (
-                  <Button
-                    variant={estouSeguindo ? "secondary" : "accent"}
-                    size="sm"
-                    onClick={handleSeguir}
-                    disabled={acao}
-                  >
-                    {acao ? "..." : estouSeguindo ? "Seguindo" : "Seguir"}
-                  </Button>
+                  <>
+                    <Button
+                      variant={estouSeguindo ? "secondary" : "accent"}
+                      size="sm"
+                      onClick={handleSeguir}
+                      disabled={acao}
+                    >
+                      {acao ? "..." : estouSeguindo ? "Seguindo" : "Seguir"}
+                    </Button>
+                    <Link href={`/social/mensagens?com=${perfilId}`}>
+                      <Button variant="secondary" size="sm">💬 Mensagem</Button>
+                    </Link>
+                  </>
                 )}
                 {isOwn && (
                   <Link href="/perfil">
