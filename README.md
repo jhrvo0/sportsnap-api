@@ -22,9 +22,9 @@ O repositorio esta organizado em 3 microservicos seguindo Clean Architecture e D
 ## Historias por integrante
 
 - `Joao Henrique`: H01 - Gerenciar Sessao de Treino, H02 - Check-in e Registro de Atividade, H03 - Registro Real de Atividades
-- `Antonio Paes`: H03 - Gerenciar Lote de Fotos, H04 - Dashboard do Fotografo
-- `Marco Maciel`: H05 - Comprar Licenca de Foto com Split Financeiro, H06 - Motor de Sugestao de Fotos
-- `Galileu Calaca`: H07 - Sincronizar Carta do Atleta, H08 - Ranking e Evolucao da Carta, H09 - Perfil Social e Rede de Conexoes, H10 - Conexoes, Pedidos e Bloqueios, H11 - Feed de Atividades e Curtidas, H12 - Notificacoes
+- `Antonio Paes`: H04 - Gerenciar Lote de Fotos, H05 - Dashboard do Fotografo
+- `Marco Maciel`: H06 - Comprar Licenca de Foto com Split Financeiro, H07 - Plano de assinaturas
+- `Galileu Calaca`: H08 - Sincronizar Carta do Atleta, H09 - Ranking e Evolucao da Carta, H10 - Perfil Social e Rede de Conexoes, H11 - Conexoes, Pedidos e Bloqueios, H12 - Feed de Atividades e Curtidas, H13 - Notificacoes
 
 ## Historias BDD
 
