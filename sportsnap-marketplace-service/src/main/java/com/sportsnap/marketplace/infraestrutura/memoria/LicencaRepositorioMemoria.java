@@ -26,7 +26,8 @@ public class LicencaRepositorioMemoria implements LicencaRepositorio {
             int novoId = sequencia.getAndIncrement();
             var nova = new LicencaDeImagem(new LicencaId(novoId), licenca.getAtletaId(),
                                              licenca.getFotoId(), licenca.getPreco(),
-                                             licenca.getAdquiridaEm(), licenca.isCancelada());
+                                             licenca.getAdquiridaEm(), licenca.isCancelada(),
+                                             licenca.isAdquiridaViaCota());
             armazem.put(novoId, nova);
             return nova;
         }

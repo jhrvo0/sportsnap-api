@@ -1,5 +1,6 @@
 package com.sportsnap.marketplace.bdd.steps;
 
+import com.sportsnap.marketplace.dominio.assinatura.AssinaturaRepositorio;
 import com.sportsnap.marketplace.dominio.foto.FotoRepositorio;
 import com.sportsnap.marketplace.dominio.fotografo.FotografoRepositorio;
 import com.sportsnap.marketplace.dominio.licenca.LicencaRepositorio;
@@ -18,6 +19,7 @@ public class ContextoMarketplace {
     @Autowired private LicencaRepositorio licencaRepositorio;
     @Autowired private SplitRepositorio splitRepositorio;
     @Autowired private FavoritoRepositorio favoritoRepositorio;
+    @Autowired private AssinaturaRepositorio assinaturaRepositorio;
     @Autowired private ColetorDeEventos coletorDeEventos;
 
     @Before
@@ -28,6 +30,7 @@ public class ContextoMarketplace {
         fotoRepositorio.limpar();
         loteRepositorio.limpar();
         fotografoRepositorio.limpar();
+        assinaturaRepositorio.limpar();
         coletorDeEventos.limpar();
     }
 

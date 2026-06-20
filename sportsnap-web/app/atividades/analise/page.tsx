@@ -50,7 +50,11 @@ const extrairMetricasDisponiveis = (atividades: any[], esporte: string) => {
         { id: "distancia", label: "🚴 Distância", unit: "km" },
         { id: "velocidadeMedia", label: "⚡ Velocidade Média", unit: "km/h" },
       );
-    } else {
+    } else if (esporte === "NATACAO") {
+      lista.unshift(
+        { id: "distancia", label: "🏊 Distância", unit: "km" }
+      );
+    } else if (esporte !== "SURF" && esporte !== "SKATE" && esporte !== "FUTEBOL") {
       lista.unshift(
         { id: "distancia", label: "🏃 Distância", unit: "km" },
         { id: "pace", label: "⚡ Pace Médio", unit: "min/km" },
@@ -73,6 +77,9 @@ const extrairMetricasDisponiveis = (atividades: any[], esporte: string) => {
       }
       if (a.metricas.assistencias !== undefined && !lista.some((m) => m.id === "assistencias")) {
         lista.push({ id: "assistencias", label: "💟 Assistências", unit: "assistências" });
+      }
+      if (a.metricas.voltas !== undefined && !lista.some((m) => m.id === "voltas")) {
+        lista.push({ id: "voltas", label: "🏊 Voltas", unit: "voltas" });
       }
       if (a.metricas.velocidadeMax !== undefined && !lista.some((m) => m.id === "velocidadeMax")) {
         lista.push({ id: "velocidadeMax", label: "🚀 Velocidade Máxima", unit: "km/h" });
@@ -102,6 +109,22 @@ const extrairMetricasDisponiveis = (atividades: any[], esporte: string) => {
         }
         if ((lbl === "assistências" || lbl === "assistencias") && !lista.some((item) => item.id === "assistencias")) {
           lista.push({ id: "assistencias", label: "💟 Assistências", unit: "assistências" });
+          return;
+        }
+        if (lbl === "ondas surfadas" && !lista.some((item) => item.id === "ondas")) {
+          lista.push({ id: "ondas", label: "🌊 Ondas Surfadas", unit: "ondas" });
+          return;
+        }
+        if (lbl === "manobras acertadas" && !lista.some((item) => item.id === "manobras")) {
+          lista.push({ id: "manobras", label: "🛹 Manobras Acertadas", unit: "manobras" });
+          return;
+        }
+        if (lbl === "voltas" && !lista.some((item) => item.id === "voltas")) {
+          lista.push({ id: "voltas", label: "🏊 Voltas", unit: "voltas" });
+          return;
+        }
+        if ((lbl === "velocidade máxima" || lbl === "velocidade maxima" || lbl === "vel. máx" || lbl === "vel. max" || lbl === "velocidademax") && !lista.some((item) => item.id === "velocidadeMax")) {
+          lista.push({ id: "velocidadeMax", label: "🚀 Velocidade Máxima", unit: "km/h" });
           return;
         }
         const normalizedId =
@@ -148,6 +171,19 @@ const getMetricValue = (a: any, metricId: string): number | null => {
   if (metricId === "assistencias") {
     if (a.metricas?.assistencias !== undefined) return Number(a.metricas.assistencias);
   }
+  if (metricId === "ondas") {
+    if (a.metricas?.ondas !== undefined) return Number(a.metricas.ondas);
+  }
+  if (metricId === "manobras") {
+    if (a.metricas?.manobras !== undefined) return Number(a.metricas.manobras);
+  }
+  if (metricId === "voltas") {
+    if (a.metricas?.voltas !== undefined) return Number(a.metricas.voltas);
+  }
+  if (metricId === "velocidadeMax") {
+    if (a.velocidadeMax !== undefined && a.velocidadeMax > 0) return Number(a.velocidadeMax);
+    if (a.metricas?.velocidadeMax !== undefined) return Number(a.metricas.velocidadeMax);
+  }
 
   if (a.metricas) {
     if (typeof a.metricas === "object" && a.metricas[metricId] !== undefined) {
@@ -176,6 +212,34 @@ const getMetricValue = (a: any, metricId: string): number | null => {
         const match = customArray.find((m: any) => {
           const lbl = m.label?.toLowerCase().trim();
           return lbl === "assistências" || lbl === "assistencias";
+        });
+        if (match) return Number(match.value);
+      }
+      if (metricId === "ondas") {
+        const match = customArray.find((m: any) => {
+          const lbl = m.label?.toLowerCase().trim();
+          return lbl === "ondas" || lbl === "ondas surfadas";
+        });
+        if (match) return Number(match.value);
+      }
+      if (metricId === "manobras") {
+        const match = customArray.find((m: any) => {
+          const lbl = m.label?.toLowerCase().trim();
+          return lbl === "manobras" || lbl === "manobras acertadas";
+        });
+        if (match) return Number(match.value);
+      }
+      if (metricId === "voltas") {
+        const match = customArray.find((m: any) => {
+          const lbl = m.label?.toLowerCase().trim();
+          return lbl === "voltas" || lbl === "voltas nadadas";
+        });
+        if (match) return Number(match.value);
+      }
+      if (metricId === "velocidadeMax") {
+        const match = customArray.find((m: any) => {
+          const lbl = m.label?.toLowerCase().trim();
+          return lbl === "velocidade máxima" || lbl === "velocidade maxima" || lbl === "vel. máx" || lbl === "vel. max" || lbl === "velocidademax";
         });
         if (match) return Number(match.value);
       }
@@ -407,7 +471,21 @@ export default function AnaliseAtividadesPage() {
   const [metricaChart2, setMetricaChart2] = useState<string>("");
   const [metricasDisponiveis, setMetricasDisponiveis] = useState<{ id: string; label: string; unit: string }[]>([]);
 
-  const [analise, setAnalise] = useState<(AnaliseEvolucaoDto & { velocidadeMediaGeral?: number; melhorVelocidade?: number }) | null>(null);
+  const [analise, setAnalise] = useState<(Omit<AnaliseEvolucaoDto, "ultimosTreinos"> & { 
+    velocidadeMediaGeral?: number; 
+    melhorVelocidade?: number;
+    totalOndas?: number;
+    mediaOndas?: number;
+    totalManobras?: number;
+    mediaManobras?: number;
+    totalGols?: number;
+    totalAssistencias?: number;
+    totalVoltas?: number;
+    esforcoMedio?: number;
+    totalXp?: number;
+    duracaoMedia?: number;
+    ultimosTreinos: any[];
+  }) | null>(null);
   const [loading, setLoading] = useState(true);
   const [erro, setErro] = useState<string | null>(null);
 
@@ -672,9 +750,16 @@ export default function AnaliseAtividadesPage() {
           ritmoMedio: getPace(a),
           esforcoPercebido: a.esforcoPercebido,
           origemRegistro: a.origemRegistro,
+          ondas: getMetricValue(a, "ondas"),
+          manobras: getMetricValue(a, "manobras"),
+          gols: getMetricValue(a, "gols"),
+          assistencias: getMetricValue(a, "assistencias"),
+          voltas: getMetricValue(a, "voltas"),
+          velocidadeMax: a.velocidadeMax || getMetricValue(a, "velocidadeMax") || 0,
         };
       });
-      // CALCULA VELOCIDADE REAL PARA BICICLETA
+
+      // CALCULA VELOCIDADE REAL PARA BICICLETA/SURF/SKATE
       const velocidadesMedias = normalized.map(a => a.velocidadeMedia).filter((v): v is number => v !== undefined && v > 0);
       const velocidadeMediaGeral = velocidadesMedias.length > 0
         ? velocidadesMedias.reduce((acc, v) => acc + v, 0) / velocidadesMedias.length
@@ -684,6 +769,32 @@ export default function AnaliseAtividadesPage() {
       const melhorVelocidade = velocidadesMax.length > 0
         ? Math.max(...velocidadesMax)
         : 0;
+
+      // Calculos especificos por esporte
+      let totalOndas = 0;
+      let totalManobras = 0;
+      let totalGols = 0;
+      let totalAssistencias = 0;
+      let totalVoltas = 0;
+      let totalXp = 0;
+      let totalDuracaoMinutos = 0;
+
+      normalized.forEach(a => {
+        totalOndas += getMetricValue(a, "ondas") || 0;
+        totalManobras += getMetricValue(a, "manobras") || 0;
+        totalGols += getMetricValue(a, "gols") || 0;
+        totalAssistencias += getMetricValue(a, "assistencias") || 0;
+        totalVoltas += getMetricValue(a, "voltas") || 0;
+        totalXp += a.xpGanho || 0;
+        totalDuracaoMinutos += a.duracao || 0;
+      });
+
+      const mediaOndas = totalAtividades > 0 ? totalOndas / totalAtividades : 0;
+      const mediaManobras = totalAtividades > 0 ? totalManobras / totalAtividades : 0;
+      const duracaoMedia = totalAtividades > 0 ? totalDuracaoMinutos / totalAtividades : 0;
+
+      const esforcos = normalized.map(a => a.esforcoPercebido).filter((e): e is number => e !== null && e > 0);
+      const esforcoMedio = esforcos.length > 0 ? esforcos.reduce((acc, e) => acc + e, 0) / esforcos.length : 0;
 
       setAnalise({
         totalAtividades,
@@ -698,6 +809,16 @@ export default function AnaliseAtividadesPage() {
         ultimosTreinos,
         velocidadeMediaGeral,
         melhorVelocidade,
+        totalOndas,
+        mediaOndas,
+        totalManobras,
+        mediaManobras,
+        totalGols,
+        totalAssistencias,
+        totalVoltas,
+        esforcoMedio,
+        totalXp,
+        duracaoMedia,
       });
     } catch (err) {
       console.error("Falha ao calcular dados offline:", err);
@@ -813,37 +934,6 @@ export default function AnaliseAtividadesPage() {
         <div className="space-y-8">
           {/* Resumo de métricas reais */}
           {(() => {
-            const isBicicleta = esporte === "BICICLETA";
-            
-            let ritmoMedioValue = formatarPace(analise.ritmoMedioGeral);
-            let ritmoMedioLabel = "Pace Médio";
-            let ritmoMedioHint = "Ritmo geral";
-            let ritmoMedioIcon = "⚡";
-            
-            let melhorRitmoValue = formatarPace(analise.melhorRitmo);
-            let melhorRitmoLabel = "Melhor Pace";
-            let melhorRitmoHint = "Recorde de ritmo";
-            
-            if (isBicicleta) {
-              const tempoHoras = analise.tempoTotalSegundos / 3600;
-              const velMediaVal = (analise.velocidadeMediaGeral && analise.velocidadeMediaGeral > 0)
-                ? analise.velocidadeMediaGeral 
-                : (tempoHoras > 0 ? analise.distanciaTotal / tempoHoras : 0);
-              
-              ritmoMedioValue = `${velMediaVal.toFixed(1)} km/h`;
-              ritmoMedioLabel = "Velocidade Média";
-              ritmoMedioHint = "Velocidade geral";
-              ritmoMedioIcon = "🚀";
-              
-              const velMaxVal = (analise.melhorVelocidade && analise.melhorVelocidade > 0)
-                ? analise.melhorVelocidade 
-                : (analise.melhorRitmo > 0 ? 60 / analise.melhorRitmo : 0);
-                
-              melhorRitmoValue = velMaxVal > 0 ? `${velMaxVal.toFixed(1)} km/h` : "—";
-              melhorRitmoLabel = "Melhor Velocidade";
-              melhorRitmoHint = "Recorde de velocidade";
-            }
-
             return (
               <div>
                 <SectionHeading
@@ -852,24 +942,95 @@ export default function AnaliseAtividadesPage() {
                   badge={{ tone: "accent", label: `${analise.totalAtividades || 0} treinos` }}
                 />
                 <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                  <StatCard label="Treinos" value={`${analise.totalAtividades || 0}`} hint="Sessões totais" icon="🏋️" />
-                  <StatCard label="Distância" value={(analise.distanciaTotal || 0).toFixed(1)} unit="km" hint="Distância total" icon={isBicicleta ? "🚴" : "🏃"} />
-                  <StatCard label="Duração" value={formatarDuracao(analise.tempoTotalSegundos || 0)} hint="Tempo total" icon="⏱️" />
-                  <StatCard label={ritmoMedioLabel} value={ritmoMedioValue} hint={ritmoMedioHint} icon={ritmoMedioIcon} />
-                  <StatCard
-                    label={melhorRitmoLabel}
-                    value={melhorRitmoValue}
-                    hint={melhorRitmoHint}
-                    icon="🏅"
-                    highlight
-                  />
-                  <StatCard
-                    label="Maior Dist."
-                    value={(analise.maiorDistancia || 0).toFixed(1)}
-                    unit="km"
-                    hint="Recorde de distância"
-                    icon="📈"
-                  />
+                  {(() => {
+                    if (esporte === "SKATE") {
+                      return (
+                        <>
+                          <StatCard label="Treinos" value={`${analise.totalAtividades || 0}`} hint="Sessões totais" icon="🛹" />
+                          <StatCard label="Manobras Totais" value={`${analise.totalManobras || 0}`} hint="Manobras acertadas" icon="🎯" />
+                          <StatCard label="Média de Manobras" value={(analise.mediaManobras || 0).toFixed(1)} hint="Média por treino" icon="📈" />
+                          <StatCard label="Vel. Máxima" value={analise.melhorVelocidade && analise.melhorVelocidade > 0 ? `${analise.melhorVelocidade.toFixed(1)} km/h` : "—"} hint="Recorde de velocidade" icon="🚀" highlight />
+                          <StatCard label="Duração" value={formatarDuracao(analise.tempoTotalSegundos || 0)} hint="Tempo total" icon="⏱️" />
+                          <StatCard label="Esforço Médio" value={analise.esforcoMedio && analise.esforcoMedio > 0 ? `${analise.esforcoMedio.toFixed(1)}/10` : "—"} hint="Média de esforço" icon="🧠" />
+                        </>
+                      );
+                    }
+                    if (esporte === "SURF") {
+                      return (
+                        <>
+                          <StatCard label="Treinos" value={`${analise.totalAtividades || 0}`} hint="Sessões totais" icon="🏄" />
+                          <StatCard label="Ondas Surfadas" value={`${analise.totalOndas || 0}`} hint="Total de ondas" icon="🌊" />
+                          <StatCard label="Média de Ondas" value={(analise.mediaOndas || 0).toFixed(1)} hint="Média por treino" icon="📈" />
+                          <StatCard label="Vel. Máxima" value={analise.melhorVelocidade && analise.melhorVelocidade > 0 ? `${analise.melhorVelocidade.toFixed(1)} km/h` : "—"} hint="Velocidade máxima" icon="🚀" highlight />
+                          <StatCard label="Duração" value={formatarDuracao(analise.tempoTotalSegundos || 0)} hint="Tempo total" icon="⏱️" />
+                          <StatCard label="Esforço Médio" value={analise.esforcoMedio && analise.esforcoMedio > 0 ? `${analise.esforcoMedio.toFixed(1)}/10` : "—"} hint="Média de esforço" icon="🧠" />
+                        </>
+                      );
+                    }
+                    if (esporte === "FUTEBOL") {
+                      const totalGols = analise.totalGols || 0;
+                      const totalAssistencias = analise.totalAssistencias || 0;
+                      return (
+                        <>
+                          <StatCard label="Treinos" value={`${analise.totalAtividades || 0}`} hint="Sessões totais" icon="⚽" />
+                          <StatCard label="Gols" value={`${totalGols}`} hint="Total de gols" icon="🥅" />
+                          <StatCard label="Assistências" value={`${totalAssistencias}`} hint="Total de passes" icon="💟" />
+                          <StatCard label="Participações" value={`${totalGols + totalAssistencias}`} hint="Gols + Assistências" icon="🔥" highlight />
+                          <StatCard label="Duração" value={formatarDuracao(analise.tempoTotalSegundos || 0)} hint="Tempo total" icon="⏱️" />
+                          <StatCard label="Esforço Médio" value={analise.esforcoMedio && analise.esforcoMedio > 0 ? `${analise.esforcoMedio.toFixed(1)}/10` : "—"} hint="Média de esforço" icon="🧠" />
+                        </>
+                      );
+                    }
+                    if (esporte === "NATACAO") {
+                      const totalVoltas = analise.totalVoltas || 0;
+                      const mediaVoltas = analise.totalAtividades > 0 ? totalVoltas / analise.totalAtividades : 0;
+                      return (
+                        <>
+                          <StatCard label="Treinos" value={`${analise.totalAtividades || 0}`} hint="Sessões totais" icon="🏊" />
+                          <StatCard label="Distância" value={(analise.distanciaTotal || 0).toFixed(1)} unit="km" hint="Distância total" icon="🌊" />
+                          <StatCard label="Voltas" value={`${totalVoltas}`} hint="Total de voltas" icon="🔄" />
+                          <StatCard label="Média de Voltas" value={mediaVoltas.toFixed(1)} hint="Média por treino" icon="📈" />
+                          <StatCard label="Duração" value={formatarDuracao(analise.tempoTotalSegundos || 0)} hint="Tempo total" icon="⏱️" />
+                          <StatCard label="Maior Dist." value={(analise.maiorDistancia || 0).toFixed(1)} unit="km" hint="Recorde de distância" icon="📈" highlight />
+                        </>
+                      );
+                    }
+                    if (esporte === "BICICLETA") {
+                      const tempoHoras = analise.tempoTotalSegundos / 3600;
+                      const velMediaVal = (analise.velocidadeMediaGeral && analise.velocidadeMediaGeral > 0)
+                        ? analise.velocidadeMediaGeral 
+                        : (tempoHoras > 0 ? analise.distanciaTotal / tempoHoras : 0);
+                      
+                      const velMaxVal = (analise.melhorVelocidade && analise.melhorVelocidade > 0)
+                        ? analise.melhorVelocidade 
+                        : (analise.melhorRitmo > 0 ? 60 / analise.melhorRitmo : 0);
+                      return (
+                        <>
+                          <StatCard label="Treinos" value={`${analise.totalAtividades || 0}`} hint="Sessões totais" icon="🏋️" />
+                          <StatCard label="Distância" value={(analise.distanciaTotal || 0).toFixed(1)} unit="km" hint="Distância total" icon="🚴" />
+                          <StatCard label="Duração" value={formatarDuracao(analise.tempoTotalSegundos || 0)} hint="Tempo total" icon="⏱️" />
+                          <StatCard label="Velocidade Média" value={`${velMediaVal.toFixed(1)} km/h`} hint="Velocidade geral" icon="🚀" />
+                          <StatCard label="Melhor Velocidade" value={velMaxVal > 0 ? `${velMaxVal.toFixed(1)} km/h` : "—"} hint="Recorde de velocidade" icon="🏅" highlight />
+                          <StatCard label="Maior Dist." value={(analise.maiorDistancia || 0).toFixed(1)} unit="km" hint="Recorde de distância" icon="📈" />
+                        </>
+                      );
+                    }
+                    
+                    // Fallback (Corrida / Caminhada / Outros)
+                    const ritmoMedioValue = formatarPace(analise.ritmoMedioGeral);
+                    const melhorRitmoValue = formatarPace(analise.melhorRitmo);
+                    const isCaminhada = esporte === "CAMINHADA";
+                    return (
+                      <>
+                        <StatCard label="Treinos" value={`${analise.totalAtividades || 0}`} hint="Sessões totais" icon="🏋️" />
+                        <StatCard label="Distância" value={(analise.distanciaTotal || 0).toFixed(1)} unit="km" hint="Distância total" icon={isCaminhada ? "🥾" : "🏃"} />
+                        <StatCard label="Duração" value={formatarDuracao(analise.tempoTotalSegundos || 0)} hint="Tempo total" icon="⏱️" />
+                        <StatCard label="Pace Médio" value={ritmoMedioValue} hint="Ritmo geral" icon="⚡" />
+                        <StatCard label="Melhor Pace" value={melhorRitmoValue} hint="Recorde de ritmo" icon="🏅" highlight />
+                        <StatCard label="Maior Dist." value={(analise.maiorDistancia || 0).toFixed(1)} unit="km" hint="Recorde de distância" icon="📈" />
+                      </>
+                    );
+                  })()}
                 </div>
               </div>
             );
@@ -973,30 +1134,159 @@ export default function AnaliseAtividadesPage() {
             {/* Tabela em desktop */}
             <div className="hidden overflow-x-auto sm:block">
               <table className="w-full text-left text-sm text-ink-500">
-                <thead className="bg-ink-50 text-[11px] font-black uppercase tracking-wider text-ink-400">
-                  <tr>
-                    <th className="px-6 py-4">Data</th>
-                    <th className="px-6 py-4">Distância</th>
-                    <th className="px-6 py-4">Duração</th>
-                    <th className="px-6 py-4">{esporte === "BICICLETA" ? "Velocidade" : "Pace"}</th>
-                    <th className="px-6 py-4">Esforço</th>
-                    <th className="px-6 py-4">Local</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-ink-100 font-bold">
-                  {(analise.ultimosTreinos || []).map((t) => (
-                    <tr key={t.id} className="transition-colors hover:bg-ink-50/60">
-                      <td className="px-6 py-4 text-ink-900">{t.data ? formatarDataCurta(t.data) : ""}</td>
-                      <td className="px-6 py-4 text-ink-800">{t.distancia > 0 ? `${t.distancia.toFixed(2)} km` : "—"}</td>
-                      <td className="px-6 py-4 text-ink-800">{formatarDuracao(t.duracaoSegundos)}</td>
-                      <td className="px-6 py-4 text-ink-900">{formatarValorRitmo(t.ritmoMedio, esporte === "BICICLETA")}</td>
-                      <td className="px-6 py-4 text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</td>
-                      <td className="px-6 py-4">
-                        <Badge tone={t.checkInId ? "accent" : "neutral"}>{obterLocalLabel(t)}</Badge>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
+                {(() => {
+                  if (esporte === "SKATE") {
+                    return (
+                      <>
+                        <thead className="bg-ink-50 text-[11px] font-black uppercase tracking-wider text-ink-400">
+                          <tr>
+                            <th className="px-6 py-4">Data</th>
+                            <th className="px-6 py-4">Manobras</th>
+                            <th className="px-6 py-4">Duração</th>
+                            <th className="px-6 py-4">Vel. Máxima</th>
+                            <th className="px-6 py-4">Esforço</th>
+                            <th className="px-6 py-4">Local</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-ink-100 font-bold">
+                          {(analise.ultimosTreinos || []).map((t) => (
+                            <tr key={t.id} className="transition-colors hover:bg-ink-50/60">
+                              <td className="px-6 py-4 text-ink-900">{t.data ? formatarDataCurta(t.data) : ""}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.manobras !== undefined && t.manobras !== null ? t.manobras : "—"}</td>
+                              <td className="px-6 py-4 text-ink-800">{formatarDuracao(t.duracaoSegundos)}</td>
+                              <td className="px-6 py-4 text-ink-900">{t.velocidadeMax > 0 ? `${t.velocidadeMax.toFixed(1)} km/h` : "—"}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</td>
+                              <td className="px-6 py-4">
+                                <Badge tone={t.checkInId ? "accent" : "neutral"}>{obterLocalLabel(t)}</Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </>
+                    );
+                  }
+                  if (esporte === "SURF") {
+                    return (
+                      <>
+                        <thead className="bg-ink-50 text-[11px] font-black uppercase tracking-wider text-ink-400">
+                          <tr>
+                            <th className="px-6 py-4">Data</th>
+                            <th className="px-6 py-4">Ondas</th>
+                            <th className="px-6 py-4">Duração</th>
+                            <th className="px-6 py-4">Vel. Máxima</th>
+                            <th className="px-6 py-4">Esforço</th>
+                            <th className="px-6 py-4">Local</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-ink-100 font-bold">
+                          {(analise.ultimosTreinos || []).map((t) => (
+                            <tr key={t.id} className="transition-colors hover:bg-ink-50/60">
+                              <td className="px-6 py-4 text-ink-900">{t.data ? formatarDataCurta(t.data) : ""}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.ondas !== undefined && t.ondas !== null ? t.ondas : "—"}</td>
+                              <td className="px-6 py-4 text-ink-800">{formatarDuracao(t.duracaoSegundos)}</td>
+                              <td className="px-6 py-4 text-ink-900">{t.velocidadeMax > 0 ? `${t.velocidadeMax.toFixed(1)} km/h` : "—"}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</td>
+                              <td className="px-6 py-4">
+                                <Badge tone={t.checkInId ? "accent" : "neutral"}>{obterLocalLabel(t)}</Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </>
+                    );
+                  }
+                  if (esporte === "FUTEBOL") {
+                    return (
+                      <>
+                        <thead className="bg-ink-50 text-[11px] font-black uppercase tracking-wider text-ink-400">
+                          <tr>
+                            <th className="px-6 py-4">Data</th>
+                            <th className="px-6 py-4">Gols</th>
+                            <th className="px-6 py-4">Assistências</th>
+                            <th className="px-6 py-4">Duração</th>
+                            <th className="px-6 py-4">Esforço</th>
+                            <th className="px-6 py-4">Local</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-ink-100 font-bold">
+                          {(analise.ultimosTreinos || []).map((t) => (
+                            <tr key={t.id} className="transition-colors hover:bg-ink-50/60">
+                              <td className="px-6 py-4 text-ink-900">{t.data ? formatarDataCurta(t.data) : ""}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.gols !== undefined && t.gols !== null ? t.gols : "—"}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.assistencias !== undefined && t.assistencias !== null ? t.assistencias : "—"}</td>
+                              <td className="px-6 py-4 text-ink-800">{formatarDuracao(t.duracaoSegundos)}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</td>
+                              <td className="px-6 py-4">
+                                <Badge tone={t.checkInId ? "accent" : "neutral"}>{obterLocalLabel(t)}</Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </>
+                    );
+                  }
+                  if (esporte === "NATACAO") {
+                    return (
+                      <>
+                        <thead className="bg-ink-50 text-[11px] font-black uppercase tracking-wider text-ink-400">
+                          <tr>
+                            <th className="px-6 py-4">Data</th>
+                            <th className="px-6 py-4">Distância</th>
+                            <th className="px-6 py-4">Voltas</th>
+                            <th className="px-6 py-4">Duração</th>
+                            <th className="px-6 py-4">Esforço</th>
+                            <th className="px-6 py-4">Local</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-ink-100 font-bold">
+                          {(analise.ultimosTreinos || []).map((t) => (
+                            <tr key={t.id} className="transition-colors hover:bg-ink-50/60">
+                              <td className="px-6 py-4 text-ink-900">{t.data ? formatarDataCurta(t.data) : ""}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.distancia > 0 ? `${t.distancia.toFixed(2)} km` : "—"}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.voltas !== undefined && t.voltas !== null ? t.voltas : "—"}</td>
+                              <td className="px-6 py-4 text-ink-800">{formatarDuracao(t.duracaoSegundos)}</td>
+                              <td className="px-6 py-4 text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</td>
+                              <td className="px-6 py-4">
+                                <Badge tone={t.checkInId ? "accent" : "neutral"}>{obterLocalLabel(t)}</Badge>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </>
+                    );
+                  }
+                  
+                  // BICICLETA / CORRIDA / CAMINHADA / FALLBACK
+                  const isBicicleta = esporte === "BICICLETA";
+                  return (
+                    <>
+                      <thead className="bg-ink-50 text-[11px] font-black uppercase tracking-wider text-ink-400">
+                        <tr>
+                          <th className="px-6 py-4">Data</th>
+                          <th className="px-6 py-4">Distância</th>
+                          <th className="px-6 py-4">Duração</th>
+                          <th className="px-6 py-4">{isBicicleta ? "Velocidade" : "Pace"}</th>
+                          <th className="px-6 py-4">Esforço</th>
+                          <th className="px-6 py-4">Local</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-ink-100 font-bold">
+                        {(analise.ultimosTreinos || []).map((t) => (
+                          <tr key={t.id} className="transition-colors hover:bg-ink-50/60">
+                            <td className="px-6 py-4 text-ink-900">{t.data ? formatarDataCurta(t.data) : ""}</td>
+                            <td className="px-6 py-4 text-ink-800">{t.distancia > 0 ? `${t.distancia.toFixed(2)} km` : "—"}</td>
+                            <td className="px-6 py-4 text-ink-800">{formatarDuracao(t.duracaoSegundos)}</td>
+                            <td className="px-6 py-4 text-ink-900">{formatarValorRitmo(t.ritmoMedio, isBicicleta)}</td>
+                            <td className="px-6 py-4 text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</td>
+                            <td className="px-6 py-4">
+                              <Badge tone={t.checkInId ? "accent" : "neutral"}>{obterLocalLabel(t)}</Badge>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </>
+                  );
+                })()}
               </table>
             </div>
 
@@ -1009,22 +1299,119 @@ export default function AnaliseAtividadesPage() {
                     <Badge tone={t.checkInId ? "accent" : "neutral"}>{obterLocalLabel(t)}</Badge>
                   </div>
                   <div className="mt-3 grid grid-cols-2 gap-2 text-[12px]">
-                    <div>
-                      <p className="font-black uppercase text-ink-400">Distância</p>
-                      <p className="font-bold text-ink-800">{t.distancia > 0 ? `${t.distancia.toFixed(2)} km` : "—"}</p>
-                    </div>
-                    <div>
-                      <p className="font-black uppercase text-ink-400">Duração</p>
-                      <p className="font-bold text-ink-800">{formatarDuracao(t.duracaoSegundos)}</p>
-                    </div>
-                    <div>
-                      <p className="font-black uppercase text-ink-400">{esporte === "BICICLETA" ? "Velocidade" : "Pace"}</p>
-                      <p className="font-bold text-ink-900">{formatarValorRitmo(t.ritmoMedio, esporte === "BICICLETA")}</p>
-                    </div>
-                    <div>
-                      <p className="font-black uppercase text-ink-400">Esforço</p>
-                      <p className="font-bold text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</p>
-                    </div>
+                    {(() => {
+                      if (esporte === "SKATE") {
+                        return (
+                          <>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Manobras</p>
+                              <p className="font-bold text-ink-800">{t.manobras !== undefined && t.manobras !== null ? t.manobras : "—"}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Duração</p>
+                              <p className="font-bold text-ink-800">{formatarDuracao(t.duracaoSegundos)}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Vel. Máxima</p>
+                              <p className="font-bold text-ink-900">{t.velocidadeMax > 0 ? `${t.velocidadeMax.toFixed(1)} km/h` : "—"}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Esforço</p>
+                              <p className="font-bold text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</p>
+                            </div>
+                          </>
+                        );
+                      }
+                      if (esporte === "SURF") {
+                        return (
+                          <>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Ondas</p>
+                              <p className="font-bold text-ink-800">{t.ondas !== undefined && t.ondas !== null ? t.ondas : "—"}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Duração</p>
+                              <p className="font-bold text-ink-800">{formatarDuracao(t.duracaoSegundos)}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Vel. Máxima</p>
+                              <p className="font-bold text-ink-900">{t.velocidadeMax > 0 ? `${t.velocidadeMax.toFixed(1)} km/h` : "—"}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Esforço</p>
+                              <p className="font-bold text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</p>
+                            </div>
+                          </>
+                        );
+                      }
+                      if (esporte === "FUTEBOL") {
+                        return (
+                          <>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Gols</p>
+                              <p className="font-bold text-ink-800">{t.gols !== undefined && t.gols !== null ? t.gols : "—"}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Assistências</p>
+                              <p className="font-bold text-ink-800">{t.assistencias !== undefined && t.assistencias !== null ? t.assistencias : "—"}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Duração</p>
+                              <p className="font-bold text-ink-800">{formatarDuracao(t.duracaoSegundos)}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Esforço</p>
+                              <p className="font-bold text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</p>
+                            </div>
+                          </>
+                        );
+                      }
+                      if (esporte === "NATACAO") {
+                        return (
+                          <>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Distância</p>
+                              <p className="font-bold text-ink-800">{t.distancia > 0 ? `${t.distancia.toFixed(2)} km` : "—"}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Voltas</p>
+                              <p className="font-bold text-ink-800">{t.voltas !== undefined && t.voltas !== null ? t.voltas : "—"}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Duração</p>
+                              <p className="font-bold text-ink-800">{formatarDuracao(t.duracaoSegundos)}</p>
+                            </div>
+                            <div>
+                              <p className="font-black uppercase text-ink-400">Esforço</p>
+                              <p className="font-bold text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</p>
+                            </div>
+                          </>
+                        );
+                      }
+                      
+                      // BICICLETA / CORRIDA / CAMINHADA / FALLBACK
+                      const isBicicleta = esporte === "BICICLETA";
+                      return (
+                        <>
+                          <div>
+                            <p className="font-black uppercase text-ink-400">Distância</p>
+                            <p className="font-bold text-ink-800">{t.distancia > 0 ? `${t.distancia.toFixed(2)} km` : "—"}</p>
+                          </div>
+                          <div>
+                            <p className="font-black uppercase text-ink-400">Duração</p>
+                            <p className="font-bold text-ink-800">{formatarDuracao(t.duracaoSegundos)}</p>
+                          </div>
+                          <div>
+                            <p className="font-black uppercase text-ink-400">{isBicicleta ? "Velocidade" : "Pace"}</p>
+                            <p className="font-bold text-ink-900">{formatarValorRitmo(t.ritmoMedio, isBicicleta)}</p>
+                          </div>
+                          <div>
+                            <p className="font-black uppercase text-ink-400">Esforço</p>
+                            <p className="font-bold text-ink-800">{t.esforcoPercebido ? `${t.esforcoPercebido}/10` : "—"}</p>
+                          </div>
+                        </>
+                      );
+                    })()}
                   </div>
                 </div>
               ))}

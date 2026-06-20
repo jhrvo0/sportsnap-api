@@ -28,28 +28,25 @@ public class AtividadeControlador {
 
     @PostMapping
     public RegistroAtividadeDto registrar(@RequestBody RegistroAtividadeDto dto) {
-        if (dto.checkInId == null) {
-            throw new ResponseStatusException(
-                HttpStatus.BAD_REQUEST,
-                "Atividades devem estar vinculadas a um check-in de sessao"
+        var data = dto.data != null ? dto.data : LocalDateTime.now();
+        RegistroAtividade salvo;
+
+        if (dto.checkInId != null) {
+            var intensidade = dto.intensidade != null ? Intensidade.apartirDeTexto(dto.intensidade) : null;
+            salvo = atividadeServico.registrarComCheckIn(
+                new AtletaId(dto.atletaId), new CheckInId(dto.checkInId),
+                dto.esporte, data, dto.distancia, dto.duracaoSegundos,
+                intensidade, dto.xpCalculado, dto.esforcoPercebido,
+                dto.observacoes, dto.origemRegistro != null ? dto.origemRegistro : "CHECKIN",
+                dto.metricas
+            );
+        } else {
+            salvo = atividadeServico.registrarManual(
+                new AtletaId(dto.atletaId), dto.esporte, data,
+                dto.distancia, dto.duracaoSegundos,
+                dto.esforcoPercebido, dto.observacoes, dto.metricas
             );
         }
-        var data = dto.data != null ? dto.data : LocalDateTime.now();
-        var intensidade = dto.intensidade != null ? Intensidade.apartirDeTexto(dto.intensidade) : null;
-        var salvo = atividadeServico.registrarComCheckIn(
-            new AtletaId(dto.atletaId),
-            new CheckInId(dto.checkInId),
-            dto.esporte,
-            data,
-            dto.distancia,
-            dto.duracaoSegundos,
-            intensidade,
-            dto.xpCalculado,
-            dto.esforcoPercebido,
-            dto.observacoes,
-            dto.origemRegistro != null ? dto.origemRegistro : "CHECKIN",
-            dto.metricas
-        );
         return paraDto(salvo);
     }
 

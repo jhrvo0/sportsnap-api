@@ -8,4 +8,6 @@ public interface AssinaturaRepositorio {
     Assinatura salvar(Assinatura assinatura);
 
     Optional<Assinatura> obterPorAtleta(AtletaId atletaId);
+
+    void limpar();
 }
